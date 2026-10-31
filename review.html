@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Shell Arc 2026 Wrapped - 制作ふりかえり</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+            background: #08140a; color: #fff;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        /* ステージ（スマホでは全画面、PCでは縦長カード） */
+        .stage {
+            position: relative; width: min(100vw, 460px); height: 100vh; height: min(100dvh, 880px);
+            background: #111; overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+        }
+        @media (min-width: 520px) { .stage { border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } }
+
+        .stage button, .stage a, .stage select { font-family: inherit; }
+        [hidden] { display: none !important; }
+
+        /* ===== ボタン類 ===== */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 14px 26px; border-radius: 999px; font-size: 1rem; font-weight: 800; cursor: pointer;
+            border: 2px solid transparent; text-decoration: none; transition: transform 0.15s, background-color 0.15s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn.primary { background: #fff; color: #1b5e20; }
+        .btn.primary:hover { background: #e8f5e9; }
+        .btn.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,0.6); }
+        .btn.ghost:hover { background: rgba(255,255,255,0.15); }
+        .link-skip { color: rgba(255,255,255,0.85); font-size: 0.85rem; text-decoration: underline; text-underline-offset: 3px; }
+        .link-skip:hover { color: #fff; }
+        :focus-visible { outline: 3px solid #ffeb3b; outline-offset: 2px; }
+
+        /* ===== カバー ===== */
+        .cover {
+            position: absolute; inset: 0; padding: 30px 28px; display: flex; flex-direction: column; justify-content: flex-start; gap: 16px;
+            background: linear-gradient(160deg, #1b5e20 0%, #2e7d32 55%, #00897b 100%); overflow-x: hidden; overflow-y: auto;
+        }
+        /* 画面が低い端末でも下までスクロールできるよう、上下の余白は auto で中央寄せにする */
+        .cover > :first-child { margin-top: auto; }
+        .cover > :last-child { margin-bottom: auto; }
+        .cover::before, .cover::after { content: ""; position: absolute; border-radius: 50%; filter: blur(50px); animation: float 9s ease-in-out infinite alternate; }
+        .cover::before { width: 300px; height: 300px; background: #a5d6a7; opacity: 0.35; top: -80px; right: -100px; }
+        .cover::after  { width: 320px; height: 320px; background: #00e676; opacity: 0.25; bottom: -120px; left: -120px; animation-delay: -4s; }
+        .cover > * { position: relative; z-index: 1; }
+        .cover .eyebrow { opacity: 0.85; }
+        .cover h1 { font-size: 2.6rem; line-height: 1.1; font-weight: 900; letter-spacing: -0.02em; }
+        .cover h1 span { color: #ffeb3b; }
+        .cover .sub { font-size: 1rem; opacity: 0.9; }
+        .cover .status { font-size: 0.85rem; background: rgba(0,0,0,0.22); border-radius: 12px; padding: 10px 14px; }
+        .cover .status.err { background: rgba(183,28,28,0.55); }
+        .cover .status .detail { font-size: 0.74rem; margin-top: 6px; opacity: 0.92; word-break: break-all; line-height: 1.5; }
+        .cover .field { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; }
+        .namepick { background: rgba(0,0,0,0.2); border-radius: 14px; padding: 12px; }
+        .namepick input[type="search"] { width: 100%; padding: 9px 12px; border-radius: 10px; border: none; font-size: 0.9rem; margin-bottom: 8px; background: #fff; color: #1b5e20; }
+        .namelist { display: flex; flex-wrap: wrap; gap: 6px; max-height: 150px; overflow-y: auto; }
+        .chipcheck { position: relative; }
+        .chipcheck input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+        .chipcheck span { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.25); font-size: 0.82rem; font-weight: 700; overflow-wrap: anywhere; transition: background-color 0.15s; }
+        .chipcheck:hover span { background: rgba(255,255,255,0.3); }
+        .chipcheck input:checked + span { background: #ffeb3b; border-color: #ffeb3b; color: #1b5e20; }
+        .chipcheck input:focus-visible + span { outline: 3px solid #fff; outline-offset: 2px; }
+        .picked { font-size: 0.78rem; margin-top: 10px; opacity: 0.95; overflow-wrap: anywhere; }
+        .cover .note { font-size: 0.75rem; opacity: 0.8; margin-top: 6px; }
+        .cover .actions { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 6px; }
+        .cover .actions .btn.primary { width: 100%; }
+        .file-label input { display: none; }
+
+        /* ===== ストーリー ===== */
+        .progress { position: absolute; z-index: 30; top: 10px; left: 12px; right: 12px; display: flex; gap: 4px; }
+        .seg { flex: 1; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; }
+        .seg i { display: block; height: 100%; width: 0; background: #fff; }
+        .seg.done i { width: 100%; }
+        .seg.cur i { animation: fill var(--dur, 7s) linear forwards; }
+        .seg.cur.manual i { animation: none; width: 100%; }
+        .paused .seg.cur i { animation-play-state: paused; }
+
+        .topbar { position: absolute; z-index: 30; top: 20px; left: 8px; right: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .iconbtn { background: rgba(0,0,0,0.25); color: #fff; border: none; border-radius: 999px; width: 34px; height: 34px; font-size: 0.9rem; cursor: pointer; }
+        .iconbtn:hover { background: rgba(0,0,0,0.45); }
+        .topbar .link-skip { background: rgba(0,0,0,0.25); padding: 6px 12px; border-radius: 999px; text-decoration: none; }
+
+        .slide {
+            position: absolute; inset: 0; padding: 78px 26px 36px; display: flex; flex-direction: column; justify-content: center; gap: 16px;
+            opacity: 0; visibility: hidden; transition: opacity 0.35s, visibility 0.35s; overflow: hidden;
+        }
+        .slide.active { opacity: 1; visibility: visible; }
+        .slide::before, .slide::after { content: ""; position: absolute; border-radius: 50%; filter: blur(46px); animation: float 9s ease-in-out infinite alternate; pointer-events: none; }
+        .slide::before { width: 260px; height: 260px; background: #fff; opacity: 0.16; top: -70px; right: -90px; }
+        .slide::after  { width: 300px; height: 300px; background: #000; opacity: 0.22; bottom: -110px; left: -110px; animation-delay: -4s; }
+        .slide > * { position: relative; z-index: 1; }
+
+        .t-total  { background: linear-gradient(160deg, #1b5e20, #2e7d32 55%, #00a152); }
+        .t-first  { background: linear-gradient(160deg, #006064, #00838f 60%, #26a69a); }
+        .t-day    { background: linear-gradient(160deg, #ad1457, #c2185b 50%, #6a1b9a); }
+        .t-hour   { background: linear-gradient(160deg, #1a237e, #311b92 60%, #4a148c); }
+        .t-week   { background: linear-gradient(160deg, #e65100, #d84315 60%, #bf360c); }
+        .t-comp   { background: linear-gradient(160deg, #1b5e20, #00695c 60%, #00838f); }
+        .t-top    { background: linear-gradient(160deg, #4a148c, #6a1b9a 55%, #c2185b); }
+        .t-review { background: linear-gradient(160deg, #004d40, #00695c 55%, #2e7d32); }
+        .t-speed  { background: linear-gradient(160deg, #1a237e, #283593 50%, #00838f); }
+        .t-reuse  { background: linear-gradient(160deg, #4e342e, #6d4c41 50%, #e65100); }
+        .t-me     { background: linear-gradient(160deg, #bf360c, #ad1457 60%, #6a1b9a); }
+        .t-final  { background: linear-gradient(160deg, #1b5e20, #2e7d32 50%, #00897b); }
+        .t-cal    { background: linear-gradient(160deg, #1b5e20, #33691e 55%, #558b2f); }
+        .t-cum    { background: linear-gradient(160deg, #0d47a1, #1565c0 55%, #00838f); }
+        .t-streak { background: linear-gradient(160deg, #01579b, #0277bd 55%, #00acc1); }
+        .cover > * { flex-shrink: 0; }
+
+        /* 提出カレンダー */
+        .hmwrap { width: 100%; }
+        .hm-labels { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 2px; height: 1.2em; margin-bottom: 4px; font-size: 0.62rem; opacity: 0.9; }
+        .hm-labels span { white-space: nowrap; }
+        .hm { display: grid; grid-template-columns: repeat(var(--cols), 1fr); grid-template-rows: repeat(7, auto); grid-auto-flow: column; gap: 2px; }
+        .hm i { display: block; aspect-ratio: 1; border-radius: 2px; opacity: 0; transform: scale(0.3); transition: opacity 0.4s var(--d, 0s), transform 0.4s var(--d, 0s); }
+        .slide.active .hm i { opacity: 1; transform: none; }
+        .hm i.x { visibility: hidden; }
+        .lv0 { background: rgba(255,255,255,0.14); }
+        .lv1 { background: rgba(255,255,255,0.38); }
+        .lv2 { background: rgba(255,255,255,0.6); }
+        .lv3 { background: rgba(255,255,255,0.82); }
+        .lv4 { background: #ffeb3b; }
+        .hm-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 8px; font-size: 0.65rem; opacity: 0.9; }
+        .hm-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; }
+
+        /* 累計グラフ */
+        .cum { width: 100%; }
+        .cum .line { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s cubic-bezier(.4,.1,.2,1) 0.5s; }
+        .slide.active .cum .line { stroke-dashoffset: 0; }
+        .cum .area { opacity: 0; transition: opacity 1s ease 1.5s; }
+        .slide.active .cum .area { opacity: 1; }
+        .cum .dot { opacity: 0; transition: opacity 0.4s ease 2.1s; }
+        .slide.active .cum .dot { opacity: 1; }
+        .axis { display: flex; justify-content: space-between; font-size: 0.65rem; opacity: 0.85; margin-top: -6px; }
+        .stat .s { font-size: 0.72rem; opacity: 0.88; margin-top: 2px; }
+
+        .eyebrow { font-size: 0.72rem; letter-spacing: 0.22em; font-weight: 800; opacity: 0.85; text-transform: uppercase; }
+        .badge-you { display: inline-block; background: #ffeb3b; color: #4e342e; padding: 3px 12px; border-radius: 999px; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.15em; width: fit-content; }
+        .headline { font-size: 1.55rem; line-height: 1.3; font-weight: 800; overflow-wrap: anywhere; }
+        .lead { font-size: 1rem; line-height: 1.6; opacity: 0.95; overflow-wrap: anywhere; }
+        .big { font-size: 5.4rem; line-height: 1; font-weight: 900; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+        .big small { font-size: 1.6rem; font-weight: 800; margin-left: 6px; letter-spacing: 0; }
+        .mid { font-size: 2.6rem; line-height: 1.15; font-weight: 900; overflow-wrap: anywhere; }
+        .accent { color: #ffeb3b; }
+        .big-emoji { font-size: 4rem; line-height: 1; }
+        @media (max-width: 420px) { .big { font-size: 4.6rem; } .mid { font-size: 2.2rem; } }
+
+        /* ぬるたろうの一言 */
+        .nuru { display: flex; align-items: flex-start; gap: 10px; margin-top: 6px; }
+        .nuru img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.75); background: #a5d6a7; object-fit: cover; flex-shrink: 0; }
+        .nuru .avatar-fb { width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.75); background: #2e7d32; display: flex; align-items: center; justify-content: center; font-weight: 900; flex-shrink: 0; }
+        .nuru .bubble {
+            background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.3); border-radius: 16px 16px 16px 4px; padding: 10px 14px; font-size: 0.88rem; line-height: 1.5; overflow-wrap: anywhere;
+        }
+
+        /* 縦棒グラフ */
+        .vchart { width: 100%; }
+        .vbars { display: flex; align-items: flex-end; gap: 3px; height: 170px; border-bottom: 2px solid rgba(255,255,255,0.4); }
+        .vb { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+        .vb i { display: block; width: 100%; height: 0; min-height: 2px; background: rgba(255,255,255,0.75); border-radius: 4px 4px 0 0; transition: height 0.9s cubic-bezier(.2,.8,.2,1) var(--d, 0s); }
+        .slide.active .vb i { height: var(--h); }
+        .vb.peak i { background: #ffeb3b; }
+        .vlabels { display: flex; gap: 3px; margin-top: 6px; }
+        .vlabels span { flex: 1; position: relative; height: 1em; font-size: 0.62rem; opacity: 0.85; }
+        .vlabels span b { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-weight: 600; }
+        .vlabels span.first b { left: 0; transform: none; }
+        .vlabels span.last b { left: auto; right: 0; transform: none; }
+
+        /* 横棒ランキング */
+        .hlist { display: flex; flex-direction: column; gap: 11px; }
+        .hrow { display: grid; grid-template-columns: 1.8em 1fr auto; column-gap: 8px; row-gap: 4px; align-items: baseline; }
+        .hlist.norank .hrow { grid-template-columns: 1fr auto; }
+        .hlist.norank .hrow .nm { grid-column: 1; }
+        .hlist.norank .hrow .val { grid-column: 2; }
+        .hlist.norank .hrow .track { grid-column: 1 / 3; }
+        .hrow .rk { font-weight: 900; font-size: 1.05rem; opacity: 0.9; }
+        .hrow .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hrow .val { font-weight: 800; font-variant-numeric: tabular-nums; }
+        .hrow .track { grid-column: 2 / 4; height: 9px; background: rgba(255,255,255,0.2); border-radius: 6px; overflow: hidden; }
+        .hrow .track i { display: block; height: 100%; width: 0; background: #fff; border-radius: 6px; transition: width 1s cubic-bezier(.2,.8,.2,1) var(--d, 0s); }
+        .slide.active .hrow .track i { width: var(--w); }
+        .hrow.first .track i { background: #ffeb3b; }
+        .hrow.first .nm { color: #ffeb3b; }
+
+        /* 各工程のトップコントリビューター */
+        .tlist { display: flex; flex-direction: column; gap: 10px; }
+        .trow { display: grid; grid-template-columns: 6.2em 1fr auto; column-gap: 10px; row-gap: 4px; align-items: baseline; }
+        .trow .tc { font-size: 0.78rem; font-weight: 800; opacity: 0.85; letter-spacing: 0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .trow .tw { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .trow .tn { font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; opacity: 0.95; }
+        .trow .track { grid-column: 1 / 4; height: 7px; background: rgba(255,255,255,0.2); border-radius: 6px; overflow: hidden; }
+        .trow .track i { display: block; height: 100%; width: 0; background: #ffeb3b; border-radius: 6px; transition: width 1s cubic-bezier(.2,.8,.2,1) var(--d, 0s); }
+        .slide.active .trow .track i { width: var(--w); }
+
+        /* ドーナツ */
+        .donut-wrap { position: relative; width: 190px; height: 190px; margin: 0 auto; }
+        .donut-wrap svg { transform: rotate(-90deg); }
+        .donut-wrap .bg { stroke: rgba(255,255,255,0.2); }
+        .donut-wrap .fg { stroke: #ffeb3b; stroke-linecap: round; stroke-dasharray: var(--circ); stroke-dashoffset: var(--circ); transition: stroke-dashoffset 1.5s cubic-bezier(.2,.8,.2,1) 0.4s; }
+        .slide.active .donut-wrap .fg { stroke-dashoffset: var(--off); }
+        .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .donut-center .pct { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+        .donut-center .cap { font-size: 0.75rem; opacity: 0.85; margin-top: 4px; }
+
+        .stat-pair { display: flex; gap: 12px; }
+        .stat { flex: 1; background: rgba(0,0,0,0.2); border-radius: 14px; padding: 12px 14px; }
+        .stat .k { font-size: 0.72rem; opacity: 0.85; }
+        .stat .v { font-size: 1.5rem; font-weight: 900; }
+
+        .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip { background: rgba(255,255,255,0.18); border-radius: 999px; padding: 6px 14px; font-size: 0.85rem; font-weight: 700; }
+
+        .final-actions { display: flex; flex-direction: column; gap: 12px; align-items: stretch; margin-top: 6px; }
+        .final-actions .btn { width: 100%; }
+        .confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0 !important; }
+        .confetti i { position: absolute; top: -20px; width: 8px; height: 14px; opacity: 0; }
+        .slide.active .confetti i { animation: confetti 3.2s ease-in var(--cd, 0s) infinite; }
+
+        /* 登場アニメーション */
+        .slide .rise { opacity: 0; }
+        .slide.active .rise { animation: rise 0.8s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0s); }
+
+        .hint { position: absolute; z-index: 25; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.7rem; opacity: 0.55; pointer-events: none; }
+
+        @keyframes rise { from { opacity: 0; transform: translateY(28px) scale(0.98); } to { opacity: 1; transform: none; } }
+        @keyframes fill { from { width: 0; } to { width: 100%; } }
+        @keyframes float { from { transform: translate(0, 0) scale(1); } to { transform: translate(30px, 20px) scale(1.12); } }
+        @keyframes confetti { 0% { transform: translateY(0) rotate(0); opacity: 0; } 8% { opacity: 1; } 100% { transform: translateY(900px) rotate(540deg); opacity: 0.9; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .slide .rise { opacity: 1; }
+            .slide.active .rise, .slide.active .confetti i { animation: none; }
+            .slide::before, .slide::after, .cover::before, .cover::after { animation: none; }
+            .vb i, .hrow .track i, .trow .track i, .donut-wrap .fg { transition: none; }
+            .hm i { transition: none; opacity: 1; transform: none; }
+            .cum .line, .cum .area, .cum .dot { transition: none; }
+            .confetti { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<main class="stage" id="stage">
+
+    <!-- カバー（読み込み状況・名前選択・スタート） -->
+    <section class="cover" id="cover"></section>
+
+    <!-- ストーリー本体 -->
+    <div id="story" hidden>
+        <div class="progress" id="progress" aria-hidden="true"></div>
+        <div class="topbar">
+            <button class="iconbtn" id="pauseBtn" type="button" aria-label="一時停止／再開">⏸</button>
+            <a class="link-skip" id="skipLink" href="survey.html">スキップしてアンケートへ →</a>
+        </div>
+        <div id="slides"></div>
+        <div class="hint" id="hint"></div>
+    </div>
+
+</main>
+
+<script>
+    // =====================================================================
+    // 設定
+    // =====================================================================
+    const LOG_URL    = "resources/full_logs.txt";   // index.html と同じ階層の resources/ 内
+    const SURVEY_URL = "survey.html";               // アンケートページ
+    const SLIDE_MS   = 7000;                        // 1枚あたりの自動送り時間
+
+    // 同じ人が複数の名前で記録されている場合の名寄せ（「ログ上の名前」: 「まとめたい名前」）
+    // 例: "MiDUki2.0": "MiDUki [ˈmʲi̞d͡zɨ̥kʲi]"
+    const NAME_ALIASES = {
+    };
+
+    const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // =====================================================================
+    // 小さなDOMヘルパー（ログ由来の文字列は必ず textNode で入れる＝HTMLとして解釈させない）
+    // =====================================================================
+    function h(tag, props, ...kids) {
+        const el = document.createElement(tag);
+        if (props) {
+            for (const [k, v] of Object.entries(props)) {
+                if (v == null || v === false) continue;
+                if (k === "class") el.className = v;
+                else if (k === "vars") { for (const [vk, vv] of Object.entries(v)) el.style.setProperty(vk, vv); }
+                else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+                else el.setAttribute(k, v);
+            }
+        }
+        for (const kid of kids.flat()) {
+            if (kid == null || kid === false) continue;
+            el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+        }
+        return el;
+    }
+
+    // =====================================================================
+    // ログのパース
+    //   {commit_type} * {cut_num} * {component} * {creator_name} * {message} * {timemark} * {file_index_name}
+    // =====================================================================
+    function parseLogs(text) {
+        const rows = [];
+        let seq = 0;
+        for (const raw of text.replace(/^﻿/, "").split(/\r?\n/)) {
+            const line = raw.trim();
+            if (!line) continue;
+            let p = line.split(/\s\*\s/);
+            if (p.length < 7) p = line.split(/\s*\*\s*/);     // 区切りの前後に空白が無い形式にも対応
+            if (p.length < 7) continue;                       // 初期化コミットなど
+            const ts  = p[p.length - 2].trim();
+            const cut = parseInt(p[1], 10);
+            if (!/^\d{14}$/.test(ts) || !Number.isFinite(cut)) continue;
+
+            const y = +ts.slice(0, 4), mo = +ts.slice(4, 6), d = +ts.slice(6, 8);
+            const hh = +ts.slice(8, 10), mi = +ts.slice(10, 12), ss = +ts.slice(12, 14);
+            if (mo < 1 || mo > 12 || d < 1 || d > 31 || hh > 23 || mi > 59 || ss > 59) continue;
+
+            const who = p[3].trim();
+            rows.push({
+                type: p[0].trim().toUpperCase(),
+                cut,
+                comp: p[2].trim(),
+                who: NAME_ALIASES[who] || who,
+                ts,
+                // ログの時刻(JST)をそのまま「擬似UTC」として扱う（時差・夏時間の影響を受けない）
+                t: Date.UTC(y, mo - 1, d, hh, mi, ss) / 1000,
+                date: ts.slice(0, 4) + "-" + ts.slice(4, 6) + "-" + ts.slice(6, 8),
+                hour: hh,
+                dow: new Date(Date.UTC(y, mo - 1, d)).getUTCDay(),
+                seq: seq++
+            });
+        }
+        // ログは新しい順で出力されるため、先頭が新しければ反転してから時刻で（安定）ソートする
+        if (rows.length > 1 && rows[0].t > rows[rows.length - 1].t) rows.reverse();
+        rows.sort((a, b) => a.t - b.t);
+        return rows;
+    }
+
+    // =====================================================================
+    // 集計
+    // =====================================================================
+    function core(rows) {
+        const subs = rows.filter(r => r.type === "SUBMIT");
+        const hours = Array(24).fill(0), dows = Array(7).fill(0);
+        const byDay = new Map(), comps = new Map(), pairs = new Map();
+        subs.forEach(r => {
+            hours[r.hour]++;
+            dows[(r.dow + 6) % 7]++;                          // 月=0 … 日=6
+            byDay.set(r.date, (byDay.get(r.date) || 0) + 1);
+            comps.set(r.comp, (comps.get(r.comp) || 0) + 1);
+            const k = r.cut + "|" + r.comp;
+            pairs.set(k, (pairs.get(k) || 0) + 1);
+        });
+        let bestDay = null;
+        byDay.forEach((n, date) => { if (!bestDay || n > bestDay.n) bestDay = { date, n }; });
+        let retake = null;
+        pairs.forEach((n, k) => {
+            if (n >= 2 && (!retake || n > retake.n)) {
+                const i = k.indexOf("|");
+                retake = { cut: +k.slice(0, i), comp: k.slice(i + 1), n };
+            }
+        });
+        return {
+            subs, total: subs.length, hours, dows, byDay, bestDay, retake,
+            comps: [...comps.entries()].sort((a, b) => b[1] - a[1]),
+            approve: rows.filter(r => r.type === "APPROVE").length,
+            decline: rows.filter(r => r.type === "DECLINE").length,
+            cuts: new Set(subs.map(r => r.cut)).size,
+            redo: subs.length - pairs.size,
+            first: subs[0], last: subs[subs.length - 1]
+        };
+    }
+
+    function reviewTimes(rows) {
+        const pend = new Map(), out = [];
+        rows.forEach(r => {
+            const k = r.cut + "|" + r.comp;
+            if (r.type === "SUBMIT" || r.type === "REPOINT" || r.type === "ABSORPTION") pend.set(k, r);
+            else if (r.type === "APPROVE" || r.type === "DECLINE") {
+                const s = pend.get(k);
+                if (s) { out.push({ sec: r.t - s.t, cut: r.cut, comp: r.comp }); pend.delete(k); }
+            }
+        });
+        return out;
+    }
+
+    function analyze(rows) {
+        const S = core(rows);
+        const ppl = new Map();
+        S.subs.forEach(r => ppl.set(r.who, (ppl.get(r.who) || 0) + 1));
+        S.people  = [...ppl.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+        S.members = S.people.length;
+        S.allCuts = new Set(rows.map(r => r.cut)).size;
+        S.rows    = rows;
+        S.reuse   = rows.filter(r => r.type === "REPOINT" || r.type === "ABSORPTION").length;
+        S.repoint = rows.filter(r => r.type === "REPOINT").length;
+        S.absorb  = rows.filter(r => r.type === "ABSORPTION").length;
+        S.reviews = reviewTimes(rows);
+        S.activeDays = S.byDay.size;
+        return S;
+    }
+
+    // =====================================================================
+    // 表示用の整形
+    // =====================================================================
+    const num = n => Math.round(n).toLocaleString("ja-JP");
+    const fmtDate = d => { const [, m, dd] = d.split("-"); return `${+m}月${+dd}日`; };
+    const fmtDateTime = r => `${fmtDate(r.date)} ${r.ts.slice(8, 10)}:${r.ts.slice(10, 12)}`;
+    function fmtDuration(sec) {
+        sec = Math.max(0, Math.round(sec));
+        if (sec < 60) return `${sec}秒`;
+        if (sec < 3600) return `${Math.round(sec / 60)}分`;
+        if (sec < 86400) { const hh = Math.floor(sec / 3600), mm = Math.round((sec % 3600) / 60); return mm ? `${hh}時間${mm}分` : `${hh}時間`; }
+        const dd = Math.floor(sec / 86400), hh = Math.round((sec % 86400) / 3600);
+        return hh ? `${dd}日${hh}時間` : `${dd}日`;
+    }
+    const median = arr => { const s = [...arr].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+    const PERSONAS = [
+        { name: "朝型", icon: "🌅", hours: [5, 6, 7, 8, 9, 10] },
+        { name: "昼型", icon: "☀️", hours: [11, 12, 13, 14, 15, 16] },
+        { name: "夜型", icon: "🌙", hours: [17, 18, 19, 20, 21, 22] },
+        { name: "深夜型", icon: "🦉", hours: [23, 0, 1, 2, 3, 4] }
+    ];
+    function persona(hours) {
+        const total = hours.reduce((a, b) => a + b, 0) || 1;
+        let best = null;
+        PERSONAS.forEach(p => {
+            const n = p.hours.reduce((a, hr) => a + hours[hr], 0);
+            if (!best || n > best.n) best = { ...p, n, share: n / total };
+        });
+        return best;
+    }
+    const peakIndex = arr => arr.indexOf(Math.max(...arr));
+
+    // 期間に応じて日／週／月に束ねる
+    function timeline(S) {
+        const di = d => { const [y, m, dd] = d.split("-").map(Number); return Math.round(Date.UTC(y, m - 1, dd) / 864e5); };
+        const a = di(S.first.date), b = di(S.last.date), span = b - a + 1;
+        const bins = [];
+        if (span <= 31) {
+            for (let i = 0; i < span; i++) { const dt = new Date((a + i) * 864e5); bins.push({ label: `${dt.getUTCMonth() + 1}/${dt.getUTCDate()}`, n: 0 }); }
+            S.byDay.forEach((n, d) => { bins[di(d) - a].n += n; });
+            return { bins, unit: "日" };
+        }
+        if (span <= 200) {
+            const cnt = Math.ceil(span / 7);
+            for (let i = 0; i < cnt; i++) { const dt = new Date((a + i * 7) * 864e5); bins.push({ label: `${dt.getUTCMonth() + 1}/${dt.getUTCDate()}〜`, n: 0 }); }
+            S.byDay.forEach((n, d) => { bins[Math.floor((di(d) - a) / 7)].n += n; });
+            return { bins, unit: "週" };
+        }
+        const m0 = new Date(a * 864e5), m1 = new Date(b * 864e5);
+        const k0 = m0.getUTCFullYear() * 12 + m0.getUTCMonth(), k1 = m1.getUTCFullYear() * 12 + m1.getUTCMonth();
+        for (let k = k0; k <= k1; k++) bins.push({ label: `${(k % 12) + 1}月`, n: 0 });
+        S.byDay.forEach((n, d) => { const [y, m] = d.split("-").map(Number); bins[y * 12 + (m - 1) - k0].n += n; });
+        return { bins, unit: "月" };
+    }
+
+    // ---- 日付ヘルパー（日番号 = 1970-01-01 からの日数。時差の影響を受けない） ----
+    const WD = ["月", "火", "水", "木", "金", "土", "日"];
+    const dayIdx  = d => { const [y, m, dd] = d.split("-").map(Number); return Math.round(Date.UTC(y, m - 1, dd) / 864e5); };
+    const idxDate = i => { const dt = new Date(i * 864e5); const p = n => String(n).padStart(2, "0"); return `${dt.getUTCFullYear()}-${p(dt.getUTCMonth() + 1)}-${p(dt.getUTCDate())}`; };
+    const fmtIdx   = i => fmtDate(idxDate(i));
+    const fmtRange = (a, b) => a === b ? fmtIdx(a) : `${fmtIdx(a)}〜${fmtIdx(b)}`;
+
+    // 連続記録・いちばん長いお休み・いちばん忙しい7日間（byDay: "YYYY-MM-DD" → 件数）
+    function dayStats(byDay) {
+        const cnt = new Map();
+        byDay.forEach((n, d) => cnt.set(dayIdx(d), n));
+        const idxs = [...cnt.keys()].sort((a, b) => a - b);
+        let streak = { len: 0 }, run = { from: idxs[0], len: 1 }, brk = null;
+        for (let i = 0; i < idxs.length; i++) {
+            if (i > 0) {
+                const gap = idxs[i] - idxs[i - 1] - 1;                       // 間に提出の無かった日数
+                if (gap === 0) run.len++;
+                else {
+                    run = { from: idxs[i], len: 1 };
+                    if (!brk || gap > brk.len) brk = { len: gap, from: idxs[i - 1] + 1, to: idxs[i] - 1 };
+                }
+            }
+            if (run.len > streak.len) streak = { len: run.len, from: run.from, to: run.from + run.len - 1 };
+        }
+        let week = { n: 0 };
+        idxs.forEach(s => {                                                  // 提出のあった日を起点とする7日間の合計
+            let n = 0;
+            for (let k = 0; k < 7; k++) n += cnt.get(s + k) || 0;
+            if (n > week.n) week = { n, from: s, to: s + 6 };
+        });
+        return { idxs, streak, brk, week, active: idxs.length };
+    }
+
+    // 日ごとの累計（C.cum[i] = 開始日から i 日目までの累計提出数）
+    function cumulative(S) {
+        const a = dayIdx(S.first.date), b = dayIdx(S.last.date), span = b - a + 1;
+        const per = new Array(span).fill(0);
+        S.byDay.forEach((n, d) => { per[dayIdx(d) - a] += n; });
+        let s = 0;
+        const cum = per.map(n => (s += n));
+        return { a, b, span, cum, reach: m => a + cum.findIndex(c => c >= m) };   // reach: m件目に到達した日番号
+    }
+
+    // =====================================================================
+    // 部品
+    // =====================================================================
+    function nuru(text) {
+        return h("div", { class: "nuru" },
+            // 画像が無い環境では、既存サイトと同様に緑の丸（「ぬ」）にフォールバックする
+            h("img", { src: "nurutaro.png", alt: "ぬるたろう", onerror: e => { e.target.replaceWith(h("div", { class: "avatar-fb", "aria-hidden": "true" }, "ぬ")); } }),
+            h("div", { class: "bubble" }, text));
+    }
+    function count(to, { dec = 0, suffix = "", delay = 300 } = {}) {
+        return h("span", { "data-to": to, "data-dec": dec, "data-delay": delay }, dec ? to.toFixed(dec) : num(to));
+    }
+    function bigCount(to, unit) { return h("div", { class: "big" }, count(to), unit ? h("small", null, unit) : null); }
+
+    // 縦棒グラフ（values: 数値配列, labelAt(i): ラベル文字列 or ""）
+    function vchart(values, labelAt, peak) {
+        const max = Math.max(...values, 1);
+        const bars = h("div", { class: "vbars" }, values.map((v, i) =>
+            h("div", { class: "vb" + (i === peak ? " peak" : ""), vars: { "--h": (v / max * 100) + "%", "--d": (0.5 + i * 0.03) + "s" } }, h("i"))));
+        const last = values.length - 1;
+        const labels = h("div", { class: "vlabels" }, values.map((_, i) => {
+            const t = labelAt(i);
+            return h("span", { class: i === 0 ? "first" : i === last ? "last" : "" }, t ? h("b", null, t) : null);
+        }));
+        return h("div", { class: "vchart" }, bars, labels);
+    }
+
+    // 横棒ランキング（items: [[name, n]...]）
+    function hlist(items, { rank = true, unit = "件" } = {}) {
+        const max = Math.max(...items.map(x => x[1]), 1);
+        return h("div", { class: "hlist" + (rank ? "" : " norank") }, items.map(([name, n], i) =>
+            h("div", { class: "hrow" + (i === 0 ? " first" : "") },
+                rank ? h("span", { class: "rk" }, i === 0 ? "👑" : String(i + 1)) : null,
+                h("span", { class: "nm", title: name }, name),
+                h("span", { class: "val" }, `${num(n)}${unit}`),
+                h("div", { class: "track" }, h("i", { vars: { "--w": (n / max * 100) + "%", "--d": (0.45 + i * 0.12) + "s" } })))));
+    }
+
+    // 提出カレンダー（月曜始まり・縦7マス。濃いほど提出が多い日）
+    function heatmap(byDay, a, b) {
+        const span = b - a + 1;
+        const offset = (new Date(a * 864e5).getUTCDay() + 6) % 7;
+        const W = Math.ceil((offset + span) / 7);
+        const cnt = new Map();
+        byDay.forEach((n, d) => cnt.set(dayIdx(d), n));
+        // 濃さの上限は「最大値」ではなく上位10%の値にする（突出した1日に引っ張られて全体が薄くならないように）
+        const sorted = [...cnt.values()].sort((x, y) => x - y);
+        const max = Math.max(sorted[Math.floor((sorted.length - 1) * 0.9)] || 1, 1);
+
+        const cells = [];
+        for (let c = 0; c < W * 7; c++) {
+            const di = a - offset + c, col = Math.floor(c / 7);
+            if (di < a || di > b) { cells.push(h("i", { class: "x" })); continue; }
+            const n = cnt.get(di) || 0;
+            const lv = n === 0 ? 0 : Math.min(4, Math.max(1, Math.ceil(n / max * 4)));
+            cells.push(h("i", { class: "lv" + lv, title: `${fmtIdx(di)}（${WD[(offset + (di - a)) % 7]}）：${n}件`, vars: { "--d": (0.4 + Math.min(col * 0.03, 1.6)) + "s" } }));
+        }
+        // 月ラベル（重ならないよう3列以上あける）
+        const labels = [];
+        let lastCol = -9, lastMonth = -1;
+        for (let c = 0; c < W; c++) {
+            const m = new Date(Math.max(a, a - offset + c * 7) * 864e5).getUTCMonth();
+            if (m !== lastMonth && c - lastCol >= 3) { labels.push(h("span", { style: `grid-column:${c + 1}` }, `${m + 1}月`)); lastCol = c; lastMonth = m; }
+        }
+        const legend = h("div", { class: "hm-legend" }, "少", [0, 1, 2, 3, 4].map(l => h("i", { class: "lv" + l })), "多");
+        return h("div", { class: "hmwrap", vars: { "--cols": W } },
+            h("div", { class: "hm-labels" }, labels), h("div", { class: "hm" }, cells), legend);
+    }
+
+    // 累計提出数の折れ線（SVGの座標はすべて数値から作る）
+    function cumChart(C, total) {
+        const W = 400, H = 140, top = 10, base = 136;
+        const step = Math.max(1, Math.floor(C.span / 200));
+        const pts = [];
+        for (let i = 0; i < C.span; i += step) pts.push(i);
+        if (pts[pts.length - 1] !== C.span - 1) pts.push(C.span - 1);
+        const X = i => (i / (C.span - 1) * W).toFixed(1), Y = v => (base - v / total * (base - top)).toFixed(1);
+        const line = pts.map((i, k) => (k ? "L" : "M") + X(i) + " " + Y(C.cum[i])).join(" ");
+        const half = C.reach(total / 2) - C.a;
+        const wrap = h("div", { class: "cum" });
+        wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="累計提出数の推移">` +
+            `<defs><linearGradient id="cumg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>` +
+            `<path class="area" d="${line} L${W} ${base} L0 ${base} Z" fill="url(#cumg)"/>` +
+            `<path class="line" pathLength="1" d="${line}" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` +
+            `<circle class="dot" cx="${X(half)}" cy="${Y(C.cum[half])}" r="6" fill="#ffeb3b"/></svg>`;
+        return wrap;
+    }
+
+    function donut(frac, centerEl, caption) {
+        const r = 80, circ = 2 * Math.PI * r;
+        const wrap = h("div", { class: "donut-wrap", vars: { "--circ": circ.toFixed(2), "--off": (circ * (1 - frac)).toFixed(2) } });
+        wrap.innerHTML = `<svg width="190" height="190" viewBox="0 0 190 190"><circle class="bg" cx="95" cy="95" r="${r}" fill="none" stroke-width="16"/><circle class="fg" cx="95" cy="95" r="${r}" fill="none" stroke-width="16"/></svg>`;
+        wrap.append(h("div", { class: "donut-center" }, centerEl, h("div", { class: "cap" }, caption)));
+        return wrap;
+    }
+
+    // スライド（直接の子要素が順番にふわっと登場する）
+    function slide(theme, opts, ...kids) {
+        const el = h("section", { class: "slide " + theme }, ...kids);
+        el._opts = opts || {};
+        [...el.children].forEach((c, i) => {
+            if (c.classList.contains("confetti")) return;
+            c.classList.add("rise");
+            c.style.setProperty("--d", (0.1 + i * 0.14) + "s");
+        });
+        return el;
+    }
+
+    // =====================================================================
+    // スライド定義
+    // =====================================================================
+    function teamSlides(S) {
+        const out = [];
+
+        // 1. 総提出数
+        out.push(slide("t-total", {},
+            h("div", { class: "eyebrow" }, "Shell Arc 2026 Wrapped"),
+            h("h2", { class: "headline" }, "今年のプロジェクト、みんなで積み上げた提出数は…"),
+            bigCount(S.total, "件"),
+            h("p", { class: "lead" }, `${num(S.allCuts)} カット ・ ${num(S.members)} 人のメンバーで作り上げました。`),
+            nuru(S.total >= 1000 ? "千件超えぬる！！みんな本当にすごいぬる〜！" : S.total >= 300 ? "たくさん積み上げたぬる〜！" : "一件一件が宝物ぬる〜。")));
+
+        // 2. はじまりの一件
+        out.push(slide("t-first", {},
+            h("div", { class: "eyebrow" }, "The First One"),
+            h("h2", { class: "headline" }, "最初の提出は…"),
+            h("div", { class: "mid accent" }, fmtDateTime(S.first)),
+            h("p", { class: "lead" }, `${S.first.who} さんの「${S.first.comp}」（カット${S.first.cut}）でした。`),
+            h("p", { class: "lead" }, `そこから ${fmtDate(S.last.date)} まで、提出のあった日は ${num(S.activeDays)} 日間。`),
+            nuru("ここから全部が始まったぬる〜！")));
+
+        // 3. いちばん忙しかった日（期間に応じて日／週／月）
+        const tl = timeline(S);
+        const tvals = tl.bins.map(b => b.n);
+        const tpeak = peakIndex(tvals), tlast = tvals.length - 1;
+        out.push(slide("t-day", {},
+            h("div", { class: "eyebrow" }, "Busiest Day"),
+            h("h2", { class: "headline" }, "いちばん忙しかった日"),
+            h("div", { class: "mid accent" }, fmtDate(S.bestDay.date)),
+            h("p", { class: "lead" }, `この日だけで ${num(S.bestDay.n)} 件の提出が集まりました。`),
+            vchart(tvals, i => (i === 0 || i === tlast || (i === tpeak && tpeak > 1 && tpeak < tlast - 1)) ? tl.bins[i].label : "", tpeak),
+            h("p", { class: "lead", style: "font-size:0.78rem;opacity:.8" }, `（${tl.unit}ごとの提出数）`),
+            nuru("この日はみんなフル回転だったぬる！")));
+
+        // 3-2. 忙しかった日ベスト5
+        const dayList = [...S.byDay.entries()].sort((x, y) => y[1] - x[1]);      // 同数なら日付の早い順（安定ソート）
+        if (dayList.length >= 3) {
+            const top5 = dayList.slice(0, 5);
+            const top5share = Math.round(top5.reduce((s, [, n]) => s + n, 0) / S.total * 100);
+            out.push(slide("t-day", {},
+                h("div", { class: "eyebrow" }, "Busiest Days"),
+                h("h2", { class: "headline" }, "忙しかった日ベスト" + top5.length),
+                hlist(top5.map(([d, n]) => [`${fmtDate(d)}（${WD[(new Date(dayIdx(d) * 864e5).getUTCDay() + 6) % 7]}）`, n]), { rank: true }),
+                h("p", { class: "lead" }, `この${top5.length}日だけで、全体の ${top5share}% が提出されました。`),
+                nuru(top5share >= 20 ? "山場がはっきりしていたぬる〜！" : "コンスタントに積み上げたぬる〜。")));
+        }
+
+        // 3-3. 提出カレンダー
+        const a0 = dayIdx(S.first.date), b0 = dayIdx(S.last.date), span0 = b0 - a0 + 1;
+        const colsNeeded = Math.ceil(((new Date(a0 * 864e5).getUTCDay() + 6) % 7 + span0) / 7);
+        const dstat = dayStats(S.byDay);
+        if (span0 >= 7 && colsNeeded <= 60) {
+            const actPct = Math.round(dstat.active / span0 * 100);
+            out.push(slide("t-cal", {},
+                h("div", { class: "eyebrow" }, "Activity Calendar"),
+                h("h2", { class: "headline" }, "提出カレンダー"),
+                h("div", { class: "mid accent" }, `${num(dstat.active)} / ${num(span0)} 日`),
+                h("p", { class: "lead" }, `期間のうち ${actPct}% の日に提出がありました。濃い日ほどたくさん提出された日です。`),
+                heatmap(S.byDay, a0, b0),
+                nuru(actPct >= 80 ? "ほぼ毎日、誰かが動いていたぬる！" : actPct >= 50 ? "コンスタントに進んでいたぬる〜。" : "メリハリのある進行だったぬる〜。")));
+        }
+
+        // 3-4. 累計の歩み
+        if (span0 >= 3) {
+            const C = cumulative(S);
+            const halfIdx = C.reach(S.total / 2);
+            const MILES = [100, 500, 1000, 2000, 3000, 5000, 10000].filter(m => m <= S.total).slice(-3);
+            const tail = Math.max(1, Math.floor(span0 * 0.1 + 0.5));            // 期間の最後の10%
+            const before = C.span - tail > 0 ? C.cum[C.span - tail - 1] : 0;
+            const tailPct = Math.round((S.total - before) / S.total * 100);
+            out.push(slide("t-cum", {},
+                h("div", { class: "eyebrow" }, "Progress"),
+                h("h2", { class: "headline" }, "折り返し地点は"),
+                h("div", { class: "mid accent" }, fmtIdx(halfIdx)),
+                h("p", { class: "lead" }, `総提出数の半分（${num(Math.ceil(S.total / 2))}件）に到達した日です。`),
+                cumChart(C, S.total),
+                h("div", { class: "axis" }, h("span", null, fmtIdx(C.a)), h("span", null, fmtIdx(C.b))),
+                MILES.length ? h("div", { class: "chip-row" }, MILES.map(m => h("span", { class: "chip" }, `${num(m)}件目 ${fmtIdx(C.reach(m))}`))) : null,
+                h("p", { class: "lead" }, `最後の ${tail} 日間（期間の10%）で、全体の ${tailPct}% が提出されました。`),
+                nuru(tailPct >= 20 ? "ラストスパートがすごかったぬる！" : tailPct <= 5 ? "余裕を持って進められていたぬる〜！" : "最後までコンスタントだったぬる〜。")));
+        }
+
+        // 3-5. 連続記録・お休み・最も忙しかった7日間
+        if (dstat.active >= 2) {
+            const st = dstat.streak, wk = dstat.week;
+            out.push(slide("t-streak", {},
+                h("div", { class: "eyebrow" }, "Streaks"),
+                h("h2", { class: "headline" }, "いちばん長く続いた連続記録"),
+                bigCount(st.len, "日連続"),
+                h("p", { class: "lead" }, st.len >= 2 ? `${fmtRange(st.from, st.to)}、毎日提出がありました。` : "日をあけながらの提出でした。"),
+                h("div", { class: "stat-pair" },
+                    h("div", { class: "stat" }, h("div", { class: "k" }, "いちばん長いお休み"), h("div", { class: "v" }, dstat.brk ? `${num(dstat.brk.len)}日` : "なし"),
+                        h("div", { class: "s" }, dstat.brk ? fmtRange(dstat.brk.from, dstat.brk.to) : "毎日提出がありました")),
+                    h("div", { class: "stat" }, h("div", { class: "k" }, "最も忙しかった7日間"), h("div", { class: "v" }, `${num(wk.n)}件`),
+                        h("div", { class: "s" }, fmtRange(wk.from, wk.to)))),
+                nuru(st.len >= 14 ? "2週間以上も走り続けたぬる…！すごいぬる！" : st.len >= 7 ? "1週間以上、毎日動いていたぬる〜！" : "お休みを挟みながらのペースだったぬる〜。")));
+        }
+
+        // 4. 時間帯
+        const per = persona(S.hours), ph = peakIndex(S.hours);
+        const nuruHour = { "朝型": "早起きチームぬる！えらいぬる〜。", "昼型": "健康的なチームぬる〜！", "夜型": "夜に燃えるチームぬる〜！", "深夜型": "夜更かしさんが多いぬる…睡眠も大事ぬる〜。" }[per.name];
+        out.push(slide("t-hour", {},
+            h("div", { class: "eyebrow" }, "Time of Day"),
+            h("h2", { class: "headline" }, "みんなの提出タイムは…"),
+            h("div", { class: "mid accent" }, `${per.icon} ${per.name}チーム`),
+            h("p", { class: "lead" }, `いちばん多かったのは ${ph}時台（${num(S.hours[ph])}件）。${per.name}の時間帯が全体の ${Math.round(per.share * 100)}% でした。`),
+            vchart(S.hours, i => i % 6 === 0 ? `${i}時` : "", ph),
+            nuru(nuruHour)));
+
+        // 5. 曜日
+        const wp = peakIndex(S.dows);
+        const wkShare = Math.round((S.dows[5] + S.dows[6]) / (S.total || 1) * 100);
+        out.push(slide("t-week", {},
+            h("div", { class: "eyebrow" }, "Day of Week"),
+            h("h2", { class: "headline" }, "いちばん提出が多い曜日"),
+            h("div", { class: "mid accent" }, `${WD[wp]}曜日`),
+            h("p", { class: "lead" }, `土日の提出は全体の ${wkShare}% でした。`),
+            vchart(S.dows, i => WD[i], wp),
+            nuru(wkShare >= 30 ? "週末も頑張ったぬる…ちゃんと休んでぬる〜。" : "お休みもちゃんと取れていたぬる〜。")));
+
+        // 6. 各工程のトップコントリビューター（工程の提出数が多い順に上位8工程）
+        const byComp = new Map();                                              // 工程 → (名前 → 提出数)
+        S.subs.forEach(r => {
+            let m = byComp.get(r.comp);
+            if (!m) byComp.set(r.comp, m = new Map());
+            m.set(r.who, (m.get(r.who) || 0) + 1);
+        });
+        const compRows = S.comps.slice(0, 8).map(([comp, total]) => {
+            const m = byComp.get(comp);
+            const best = Math.max(...m.values());
+            const tops = [...m.entries()].filter(([, n]) => n === best).map(([who]) => who);   // 同数トップは全員
+            return { comp, total, best, tops };
+        });
+        const topLabel = tops => tops.length === 1 ? tops[0] : tops.slice(0, 2).join(" / ") + (tops.length > 2 ? ` ほか${tops.length - 2}名` : "");
+        const soleTally = new Map();                                           // 単独トップになった工程数（人ごと）
+        compRows.forEach(r => { if (r.tops.length === 1) soleTally.set(r.tops[0], (soleTally.get(r.tops[0]) || 0) + 1); });
+        const [champ, champN] = [...soleTally.entries()].sort((x, y) => y[1] - x[1])[0] || [null, 0];
+        out.push(slide("t-comp", {},
+            h("div", { class: "eyebrow" }, "Top by Component"),
+            h("h2", { class: "headline" }, "各工程のトップコントリビューター"),
+            h("div", { class: "tlist" }, compRows.map((r, i) => {
+                const label = topLabel(r.tops), pct = Math.round(r.best / r.total * 100);
+                return h("div", { class: "trow" },
+                    h("span", { class: "tc", title: r.comp }, r.comp),
+                    h("span", { class: "tw", title: label }, label),
+                    h("span", { class: "tn" }, `${num(r.best)}件 ・ ${pct}%`),
+                    h("div", { class: "track" }, h("i", { vars: { "--w": Math.max(pct, 3) + "%", "--d": (0.45 + i * 0.1) + "s" } })));
+            })),
+            h("p", { class: "lead", style: "font-size:0.76rem;opacity:.85" },
+                "バーと％は、その工程の提出数に占める割合です。" + (S.comps.length > compRows.length ? `（提出の多い上位${compRows.length}工程。ほか${S.comps.length - compRows.length}工程）` : "")),
+            nuru(champN >= 2 ? `${champ} さんは ${champN} つの工程でトップぬる！すごいぬる〜！` : "どの工程にも頼れる人がいるぬる〜！")));
+
+        // 7. 提出数トップ5
+        const topPpl = S.people.slice(0, 5);
+        out.push(slide("t-top", {},
+            h("div", { class: "eyebrow" }, "Top Contributors"),
+            h("h2", { class: "headline" }, "提出数トップ" + topPpl.length),
+            hlist(topPpl, { rank: true }),
+            nuru(`${topPpl[0][0]} さん、トップぬる！みんなのおかげぬる〜。`)));
+
+        // 8. 通過率（承認 ÷ 総提出）とリテイク
+        //    差し戻し(DECLINE)はあまり使われず、実際は同じ工程をそのまま上書き提出するため、承認数÷総提出数を通過率とする。
+        //    ※承認は使い回し(REPOINT/ABSORPTION)にも付くため、提出数を超えた場合は100%で頭打ちにする。
+        if (S.approve > 0 && S.total > 0) {
+            const rate = Math.min(1, S.approve / S.total);
+            out.push(slide("t-review", {},
+                h("div", { class: "eyebrow" }, "Approval Rate"),
+                h("h2", { class: "headline" }, "チェックの通過率"),
+                donut(rate, h("div", { class: "pct" }, count(Math.round(rate * 100)), h("small", { style: "font-size:1.2rem" }, "%")), "承認 ÷ 総提出"),
+                h("div", { class: "stat-pair" },
+                    h("div", { class: "stat" }, h("div", { class: "k" }, "承認"), h("div", { class: "v" }, count(S.approve))),
+                    h("div", { class: "stat" }, h("div", { class: "k" }, "総提出"), h("div", { class: "v" }, count(S.total)))),
+                S.retake ? h("p", { class: "lead" }, `いちばん粘ったのは カット${S.retake.cut} の「${S.retake.comp}」。${S.retake.n} 回提出されました。`) : null,
+                nuru(rate >= 0.9 ? "ほぼ全部が通過ぬる！すごいぬる〜！" : rate >= 0.6 ? "しっかり通過していたぬる〜！" : "出し直しを重ねて磨いた証拠ぬる〜。")));
+        }
+
+        // 9. チェックの速さ
+        if (S.reviews.length) {
+            const secs = S.reviews.map(x => x.sec);
+            const med = median(secs), slow = S.reviews.reduce((a, b) => b.sec > a.sec ? b : a);
+            out.push(slide("t-speed", {},
+                h("div", { class: "eyebrow" }, "Review Speed"),
+                h("h2", { class: "headline" }, "提出からチェックまで、中央値は"),
+                h("div", { class: "mid accent" }, fmtDuration(med)),
+                h("div", { class: "stat-pair" },
+                    h("div", { class: "stat" }, h("div", { class: "k" }, "いちばん速い"), h("div", { class: "v" }, fmtDuration(Math.min(...secs)))),
+                    h("div", { class: "stat" }, h("div", { class: "k" }, "いちばん長い"), h("div", { class: "v" }, fmtDuration(slow.sec)))),
+                nuru(med < 3600 ? "チェックがとっても速いぬる！" : med < 86400 ? "その日のうちにチェックされていたぬる〜。" : "チェック待ちは少し長めだったぬる…来年の課題ぬる〜。")));
+        }
+
+        // 10. 使い回し
+        if (S.reuse > 0) {
+            out.push(slide("t-reuse", {},
+                h("div", { class: "eyebrow" }, "Reuse"),
+                h("h2", { class: "headline" }, "素材の使い回し"),
+                bigCount(S.reuse, "回"),
+                h("p", { class: "lead" }, `参照の付け替え ${num(S.repoint)} 回、コピーして取り込み ${num(S.absorb)} 回。`),
+                nuru("同じ素材を使い回して時短できたぬる〜！")));
+        }
+        return out;
+    }
+
+    // names: 選ばれた名前の配列。複数の名前を使う人のために、まとめて1人分として集計する
+    function personalSlides(S, names) {
+        const set = new Set(names);
+        const P = core(S.rows.filter(r => set.has(r.who)));
+        if (!P.total) return [];
+        const out = [];
+        const others = S.people.filter(([nm]) => !set.has(nm));          // 選ばれていない名前＝他の人
+        const rank = 1 + others.filter(([, n]) => n > P.total).length;
+        const members = others.length + 1;
+        const label = names.length <= 3 ? names.join(" ＋ ") : `${names.slice(0, 2).join(" ＋ ")} ほか${names.length - 2}名義`;
+        // DOM要素は1か所にしか置けないため、スライドごとに新しく作る
+        const you = () => h("div", { class: "badge-you" }, "YOUR 2026");
+
+        out.push(slide("t-me", {},
+            you(),
+            h("h2", { class: "headline" }, `${label} さんの提出数は…`),
+            bigCount(P.total, "件"),
+            h("p", { class: "lead" }, `${num(members)} 人中 ${rank} 位。チーム全体の ${(P.total / S.total * 100).toFixed(1)}% を担いました。`),
+            names.length > 1 ? h("p", { class: "lead", style: "font-size:0.8rem;opacity:.85" }, `※ ${names.length} 個の名前の提出をまとめて集計しています。`) : null,
+            nuru(rank === 1 ? "堂々の1位ぬる！！👑" : rank <= 3 ? "表彰台ぬる〜！おめでとうぬる！" : "あなたの一件一件が作品を作ったぬる〜。")));
+
+        const pc = P.comps.slice(0, 4);
+        out.push(slide("t-me", {},
+            you(),
+            h("h2", { class: "headline" }, "いちばん多く担当した工程"),
+            h("div", { class: "mid accent" }, pc[0][0]),
+            hlist(pc, { rank: false }),
+            h("p", { class: "lead" }, `関わったカットは ${num(P.cuts)} カットでした。`),
+            nuru(pc.length > 1 ? "いろんな工程をこなしたぬる〜！" : "一つの工程を極めたぬる〜！")));
+
+        const per = persona(P.hours), ph = peakIndex(P.hours);
+        out.push(slide("t-me", {},
+            you(),
+            h("h2", { class: "headline" }, "あなたの制作スタイル"),
+            h("div", { class: "mid accent" }, `${per.icon} ${per.name}`),
+            h("p", { class: "lead" }, `いちばん多かったのは ${ph}時台。いちばん頑張った日は ${fmtDate(P.bestDay.date)}（${num(P.bestDay.n)}件）でした。`),
+            vchart(P.hours, i => i % 6 === 0 ? `${i}時` : "", ph),
+            nuru("おつかれさまぬる〜。")));
+
+        // 個人の提出カレンダー（期間はチーム全体と同じ）
+        const A = dayIdx(S.first.date), B = dayIdx(S.last.date), SPAN = B - A + 1;
+        const cols = Math.ceil(((new Date(A * 864e5).getUTCDay() + 6) % 7 + SPAN) / 7);
+        if (SPAN >= 7 && cols <= 60) {
+            const ps = dayStats(P.byDay);
+            out.push(slide("t-me", {},
+                you(),
+                h("h2", { class: "headline" }, "あなたの提出カレンダー"),
+                h("p", { class: "lead" }, `提出した日は ${num(ps.active)} 日（期間 ${num(SPAN)} 日のうち ${Math.round(ps.active / SPAN * 100)}%）。最長 ${num(ps.streak.len)} 日連続でした。`),
+                heatmap(P.byDay, A, B),
+                nuru(ps.streak.len >= 5 ? "コツコツ続けたぬる〜！えらいぬる！" : "あなたのペースで進めたぬる〜。")));
+        }
+
+        // 通過率 = 承認 ÷ 自分の提出数（差し戻しはあまり使われないため集計しない）
+        const prate = Math.min(1, P.approve / P.total);
+        out.push(slide("t-me", {},
+            you(),
+            h("h2", { class: "headline" }, "あなたの通過率"),
+            h("div", { class: "stat-pair" },
+                h("div", { class: "stat" }, h("div", { class: "k" }, "承認"), h("div", { class: "v" }, count(P.approve))),
+                h("div", { class: "stat" }, h("div", { class: "k" }, "提出"), h("div", { class: "v" }, count(P.total)))),
+            P.approve > 0 ? h("p", { class: "lead" }, `通過率は ${Math.round(prate * 100)}%（承認 ÷ 提出）でした。`) : h("p", { class: "lead" }, "チェック結果の記録はまだありませんでした。"),
+            P.retake ? h("p", { class: "lead" }, `いちばん粘ったのは カット${P.retake.cut} の「${P.retake.comp}」。${P.retake.n} 回提出しました。`) : h("p", { class: "lead" }, "同じ工程を何度も出し直すことはありませんでした。一発勝負、かっこいいぬる！"),
+            nuru("来年もよろしくぬる〜！")));
+        return out;
+    }
+
+    function finalSlide(S) {
+        const colors = ["#ffeb3b", "#a5d6a7", "#ff80ab", "#80d8ff", "#ffffff", "#ffab40"];
+        const conf = h("div", { class: "confetti" }, Array.from({ length: 36 }, (_, i) =>
+            h("i", { style: `left:${(i * 37) % 100}%;background:${colors[i % colors.length]};--cd:${((i * 0.17) % 3).toFixed(2)}s` })));
+        return slide("t-final", { manual: true }, conf,
+            h("div", { class: "big-emoji" }, "🎉"),
+            h("h2", { class: "headline" }, "一年、おつかれさまでした！"),
+            h("p", { class: "lead" }, `${num(S.total)} 件の提出が、今年の作品になりました。`),
+            nuru("最後に、Shell Arc を使ってみた感想を聞かせてほしいぬる〜。3〜5分で終わるぬる！"),
+            h("div", { class: "final-actions" },
+                h("a", { class: "btn primary", href: SURVEY_URL }, "📝 アンケートに答える"),
+                h("button", { class: "btn ghost", type: "button", onclick: () => Story.go(0) }, "↺ もう一度見る")));
+    }
+
+    // =====================================================================
+    // ストーリー再生エンジン
+    // =====================================================================
+    const Story = (() => {
+        let slides = [], segs = [], idx = 0;
+        let held = false, userPaused = false, hidden = false;
+        const stage = document.getElementById("stage");
+        const slidesEl = document.getElementById("slides");
+        const progEl = document.getElementById("progress");
+        const pauseBtn = document.getElementById("pauseBtn");
+
+        function syncPause() {
+            const p = held || userPaused || hidden;
+            stage.classList.toggle("paused", p);
+            pauseBtn.textContent = userPaused ? "▶" : "⏸";
+        }
+
+        function runCounts(root) {
+            root.querySelectorAll("[data-to]").forEach(el => {
+                cancelAnimationFrame(el._raf);
+                const to = +el.dataset.to, dec = +el.dataset.dec || 0, delay = +el.dataset.delay || 0, dur = 1300;
+                const fmt = v => dec ? v.toFixed(dec) : num(v);
+                if (REDUCED) { el.textContent = fmt(to); return; }
+                el.textContent = fmt(0);
+                const t0 = performance.now() + delay;
+                const step = now => {
+                    const p = Math.min(1, Math.max(0, (now - t0) / dur));
+                    el.textContent = fmt(to * (1 - Math.pow(1 - p, 3)));
+                    if (p < 1) el._raf = requestAnimationFrame(step);
+                };
+                el._raf = requestAnimationFrame(step);
+            });
+        }
+
+        function show(i) {
+            idx = Math.max(0, Math.min(slides.length - 1, i));
+            slides.forEach((s, j) => s.classList.toggle("active", j === idx));
+            const s = slides[idx];
+            const manual = REDUCED || s._opts.manual;
+            segs.forEach((seg, j) => {
+                seg.className = "seg" + (j < idx ? " done" : "");
+                if (j === idx) {
+                    void seg.offsetWidth;                                  // アニメーションを確実に最初から
+                    seg.style.setProperty("--dur", (s._opts.dur || SLIDE_MS) + "ms");
+                    seg.className = "seg cur" + (manual ? " manual" : "");
+                }
+            });
+            runCounts(s);
+        }
+        const next = () => { if (idx < slides.length - 1) show(idx + 1); };
+        const prev = () => show(idx > 0 ? idx - 1 : 0);
+
+        function start(list) {
+            slides = list;
+            slidesEl.replaceChildren(...slides);
+            progEl.replaceChildren(...slides.map(() => h("div", { class: "seg" }, h("i"))));
+            segs = [...progEl.children];
+            segs.forEach(seg => seg.firstChild.addEventListener("animationend", () => { if (seg.classList.contains("cur")) next(); }));
+            document.getElementById("hint").textContent = REDUCED ? "タップ／← → キーで進みます" : "タップで次へ ・ 長押しで一時停止";
+            userPaused = false; held = false; syncPause();
+            show(0);
+        }
+
+        // 操作
+        let t0 = 0;
+        const interactive = t => t.closest("button, a, select, input, label");
+        stage.addEventListener("pointerdown", e => {
+            if (document.getElementById("story").hidden || interactive(e.target)) return;
+            t0 = performance.now(); held = true; syncPause();
+        });
+        const release = e => {
+            if (!held) return;
+            held = false; syncPause();
+            if (e.type === "pointerup" && performance.now() - t0 < 280) {
+                const r = stage.getBoundingClientRect();
+                (e.clientX - r.left < r.width * 0.3) ? prev() : next();
+            }
+        };
+        stage.addEventListener("pointerup", release);
+        stage.addEventListener("pointercancel", release);
+        stage.addEventListener("pointerleave", release);
+        pauseBtn.addEventListener("click", () => { userPaused = !userPaused; syncPause(); });
+        document.addEventListener("keydown", e => {
+            if (document.getElementById("story").hidden) return;
+            if (e.key === "ArrowRight") next();
+            else if (e.key === "ArrowLeft") prev();
+        });
+        document.addEventListener("visibilitychange", () => { hidden = document.hidden; syncPause(); });
+
+        return { start, go: show, next, prev };
+    })();
+
+    // =====================================================================
+    // カバー画面と起動
+    // =====================================================================
+    const coverEl = document.getElementById("cover");
+    const storyEl = document.getElementById("story");
+    let STATS = null;
+
+    function startStory(names) {
+        const deck = [...teamSlides(STATS)];
+        if (names && names.length) deck.push(...personalSlides(STATS, names));
+        deck.push(finalSlide(STATS));
+        coverEl.hidden = true;
+        storyEl.hidden = false;
+        Story.start(deck);
+    }
+
+    function coverBase(...body) {
+        coverEl.replaceChildren(
+            h("div", { class: "eyebrow" }, "Miteiken 2026"),
+            h("h1", null, "Shell Arc", h("br"), h("span", null, "2026 Wrapped")),
+            h("p", { class: "sub" }, "今年の制作をふりかえろう。"),
+            ...body);
+    }
+
+    function coverLoading() { coverBase(h("div", { class: "status" }, "制作ログを読み込み中…")); }
+
+    // msg: 見出し / details: 原因の手がかり（探したURL・HTTPステータス・先頭行など）
+    function coverError(msg, details = []) {
+        coverBase(
+            h("div", { class: "status err" }, msg, details.map(d => h("div", { class: "detail" }, d))),
+            h("div", { class: "actions" },
+                h("label", { class: "btn primary file-label" }, "📂 ログファイルを選んで読み込む",
+                    h("input", { type: "file", accept: ".txt,text/plain", onchange: e => { const f = e.target.files[0]; if (f) f.arrayBuffer().then(handleBuffer); } })),
+                h("a", { class: "link-skip", href: SURVEY_URL }, "スキップしてアンケートへ →")));
+    }
+
+    function coverReady() {
+        // 名前は複数選べる（複数の名前を使っている人は、全部選ぶとまとめて集計される）
+        const counts = new Map(STATS.people);
+        const picked = [];                                                    // 選んだ順
+        const summary = h("div", { class: "picked", "aria-live": "polite" });
+        const refresh = () => {
+            summary.textContent = picked.length
+                ? `選択中 ${picked.length} 件：${picked.join("、")}（計 ${num(picked.reduce((s, nm) => s + counts.get(nm), 0))}件）`
+                : "選択なし → 全体のレビューだけ見ます";
+        };
+        const items = STATS.people.map(([name, n]) =>
+            h("label", { class: "chipcheck" },
+                h("input", {
+                    type: "checkbox", value: name,
+                    onchange: e => {
+                        const i = picked.indexOf(name);
+                        if (e.target.checked && i < 0) picked.push(name);
+                        if (!e.target.checked && i >= 0) picked.splice(i, 1);
+                        refresh();
+                    }
+                }),
+                h("span", null, `${name}（${num(n)}件）`)));
+        const filter = h("input", {
+            type: "search", placeholder: "名前をしぼりこむ", "aria-label": "名前を絞り込む", autocomplete: "off",
+            oninput: e => { const q = e.target.value.trim().toLowerCase(); items.forEach(l => { l.hidden = !!q && !l.textContent.toLowerCase().includes(q); }); }
+        });
+        refresh();
+        coverBase(
+            h("div", { class: "status" }, `${num(STATS.rows.length)} 件のログを読み込みました。`),
+            h("div", { class: "namepick" },
+                h("div", { class: "field" }, "🎧 自分のレビューも見たい人は、自分の名前を選んでください（複数OK）"),
+                STATS.people.length > 8 ? filter : null,
+                h("div", { class: "namelist", role: "group", "aria-label": "名前の一覧" }, items),
+                summary,
+                h("p", { class: "note" }, "複数の名前を使っていた人は、全部選ぶとまとめて集計されます。選んだ名前はこのページの中だけで使われ、アンケートには送信されません。")),
+            h("div", { class: "actions" },
+                h("button", { class: "btn primary", type: "button", onclick: () => startStory([...picked]) }, "▶ スタート"),
+                h("a", { class: "link-skip", href: SURVEY_URL }, "スキップしてアンケートへ →")));
+    }
+
+    // 文字コードを自動判定して文字列にする
+    // （Windows の PowerShell で `> full_logs.txt` と保存すると UTF-16 になることがあるため）
+    function decodeLog(buf) {
+        const u8 = new Uint8Array(buf);
+        if (u8[0] === 0xFF && u8[1] === 0xFE) return new TextDecoder("utf-16le").decode(buf);
+        if (u8[0] === 0xFE && u8[1] === 0xFF) return new TextDecoder("utf-16be").decode(buf);
+        try { return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/^﻿/, ""); }
+        catch (e) {
+            try { return new TextDecoder("shift_jis").decode(buf); }          // メモ帳(旧)などで保存された日本語
+            catch (e2) { return new TextDecoder("utf-8").decode(buf); }
+        }
+    }
+
+    function handleBuffer(buf) { handleText(decodeLog(buf)); }
+
+    function handleText(text) {
+        const rows = parseLogs(text);
+        if (!rows.some(r => r.type === "SUBMIT")) {
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            const first = (lines[0] || "").trim();
+            const details = [`読み込んだ文字数: ${num(text.length)} ／ 空でない行: ${num(lines.length)} ／ 読み取れた行: ${num(rows.length)}`];
+            if (!lines.length) details.push("ファイルの中身が空です。");
+            else {
+                details.push("先頭の行: " + (first.length > 90 ? first.slice(0, 90) + "…" : first));
+                if (first.startsWith("<")) details.push("→ ログではなく HTML が返っています。ファイルの場所（パス）が違う可能性があります。");
+                else if (first.includes("�")) details.push("→ 文字化けしています。ファイルの保存形式（文字コード）を確認してください。");
+                else details.push("→ 想定形式: 「SUBMIT * カット番号 * 工程 * 名前 * メッセージ * 14桁の日時 * ファイル名」");
+            }
+            coverError("有効な提出ログが見つかりませんでした。", details);
+            return;
+        }
+        STATS = analyze(rows);
+        coverReady();
+    }
+
+    (async function boot() {
+        coverLoading();
+        const abs = new URL(LOG_URL, location.href).href;      // 実際にアクセスしたURL
+        try {
+            const res = await fetch(LOG_URL, { cache: "no-store" });
+            if (!res.ok) {
+                coverError(`制作ログが見つかりません（HTTP ${res.status}）。`, [
+                    "探した場所: " + abs,
+                    "→ review.html と同じ階層に resources/full_logs.txt があるか、ファイル名の大文字小文字も含めて確認してください。"
+                ]);
+                return;
+            }
+            handleBuffer(await res.arrayBuffer());
+        } catch (e) {
+            console.warn("ログの自動読み込みに失敗:", e);
+            coverError("制作ログを自動で読み込めませんでした。", [
+                "探した場所: " + abs,
+                location.protocol === "file:"
+                    ? "→ ファイルを直接開いている（file://）ため、ブラウザの制限で読めません。サーバー経由で開くか、下のボタンから選んでください。"
+                    : "→ 通信に失敗しました（" + (e && e.message ? e.message : e) + "）。"
+            ]);
+        }
+    })();
+</script>
+</body>
+</html>

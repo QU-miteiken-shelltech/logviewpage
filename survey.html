@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shell Arc 2026 - フィードバックアンケート</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --primary-light: #e8f5e9;
+            --primary-dark: #1b5e20;
+            --accent-color: #a5d6a7;
+            --bg-color: #f4f7f5;
+            --text-dark: #2c3e50;
+            --text-light: #ffffff;
+            --text-muted: #7f8c8d;
+            --border-color: #e0e0e0;
+            --code-bg: #f8f9fa;
+            --error-color: #c62828;
+            --star-color: #f9a825;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary-dark);
+            color: var(--text-light);
+            padding: 20px 15px;
+            text-align: center;
+            border-bottom: 4px solid var(--accent-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { font-size: 1.6rem; margin-bottom: 5px; }
+        header p  { font-size: 0.9rem; opacity: 0.9; }
+
+        .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+
+        /* --- ぬるたろうの挨拶 --- */
+        .message { display: flex; align-items: flex-start; gap: 12px; max-width: 90%; margin-bottom: 24px; }
+        .avatar {
+            width: 45px; height: 45px; border-radius: 50%; object-fit: cover;
+            border: 2px solid var(--accent-color); background-color: var(--primary-light); flex-shrink: 0;
+        }
+        .sender-name { display: block; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); margin-bottom: 4px; }
+        .bubble {
+            padding: 12px 16px; border-radius: 18px; border-top-left-radius: 4px;
+            font-size: 0.95rem; background-color: var(--primary-light); color: var(--primary-dark);
+            border: 1px solid var(--accent-color); box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* --- セクション --- */
+        .survey-section {
+            background-color: #fff; border-radius: 12px; padding: 28px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+        .survey-section h2 {
+            color: var(--primary-dark); font-size: 1.3rem; margin-bottom: 20px;
+            border-left: 5px solid var(--primary-color); padding-left: 12px;
+        }
+
+        .q { border: none; margin-bottom: 26px; }
+        .q:last-child { margin-bottom: 0; }
+        .q legend, .q > label.q-label {
+            display: block; font-weight: bold; font-size: 0.98rem; margin-bottom: 4px; padding: 0;
+        }
+        .req { color: var(--error-color); font-size: 0.8rem; margin-left: 6px; }
+        .opt { color: var(--text-muted); font-size: 0.8rem; font-weight: normal; margin-left: 6px; }
+        .hint { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; }
+        .hint code, .feature-cmd {
+            font-family: "Courier New", Courier, monospace; background-color: var(--code-bg);
+            color: var(--primary-dark); padding: 1px 6px; border-radius: 4px; font-size: 0.85em;
+        }
+        .error-msg { display: none; color: var(--error-color); font-size: 0.85rem; margin-top: 8px; font-weight: bold; }
+        .q.invalid .error-msg { display: block; }
+        .q.invalid { outline: 2px solid var(--error-color); outline-offset: 8px; border-radius: 6px; }
+
+        input[type="text"], select, textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border-color);
+            border-radius: 6px; font-size: 0.95rem; font-family: inherit; background: #fff;
+        }
+        textarea { resize: vertical; min-height: 96px; }
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .char-count { text-align: right; font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+        /* --- ピル型ラジオ／チェック --- */
+        .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pill { position: relative; }
+        .pill input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; cursor: pointer; margin: 0; }
+        .pill span {
+            display: inline-block; padding: 7px 14px; border: 1px solid var(--border-color);
+            border-radius: 999px; font-size: 0.9rem; background: #fff; transition: all 0.15s; user-select: none;
+        }
+        .pill:hover span { border-color: var(--accent-color); background: var(--primary-light); }
+        .pill input:checked + span { background: var(--primary-color); border-color: var(--primary-color); color: #fff; font-weight: bold; }
+        .pill input:focus-visible + span { outline: 3px solid var(--accent-color); outline-offset: 2px; }
+
+        .scale-group { display: flex; flex-wrap: wrap; gap: 6px; }
+        .scale-group .pill span { min-width: 42px; text-align: center; padding: 7px 8px; border-radius: 8px; }
+        .scale-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
+
+        /* --- 星評価 --- */
+        .stars { display: inline-flex; flex-direction: row-reverse; justify-content: flex-end; gap: 2px; }
+        .stars input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+        .stars label { font-size: 2.2rem; line-height: 1; color: #cfd8dc; cursor: pointer; transition: color 0.1s, transform 0.1s; padding: 0 2px; }
+        .stars label:hover, .stars label:hover ~ label, .stars input:checked ~ label { color: var(--star-color); }
+        .stars label:hover { transform: scale(1.12); }
+        .stars input:focus-visible + label { outline: 3px solid var(--accent-color); border-radius: 6px; }
+        .star-caption { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* --- 機能別評価 --- */
+        .feature-row { padding: 14px 0; border-bottom: 1px dashed var(--border-color); }
+        .feature-row:last-of-type { border-bottom: none; }
+        .feature-head { margin-bottom: 8px; }
+        .feature-name { font-weight: bold; font-size: 0.95rem; margin-right: 8px; }
+
+        /* --- チェックボックス列 --- */
+        .check-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; }
+        .check-item {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 0.92rem; background: #fff;
+        }
+        .check-item:hover { background: var(--primary-light); border-color: var(--accent-color); }
+        .check-item input { width: 18px; height: 18px; accent-color: var(--primary-color); flex-shrink: 0; }
+
+        .note-box {
+            border-left: 4px solid var(--primary-color); background-color: var(--primary-light);
+            padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 0.88rem; margin-bottom: 24px;
+        }
+        .note-box.warn { border-color: #e67e22; background: #fff6ec; }
+
+        /* --- 送信 --- */
+        .submit-area { text-align: center; margin: 10px 0 40px; }
+        .submit-btn {
+            background-color: var(--primary-color); color: #fff; border: none; padding: 14px 44px;
+            border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s;
+        }
+        .submit-btn:hover:not(:disabled) { background-color: var(--primary-dark); }
+        .submit-btn:disabled { background-color: var(--text-muted); cursor: not-allowed; }
+        .submit-error {
+            display: none; margin: 0 auto 14px; max-width: 560px; padding: 12px 16px; border-radius: 8px;
+            background: #fdecea; border: 1px solid var(--error-color); color: var(--error-color); font-size: 0.9rem; text-align: left;
+        }
+
+        .thanks { display: none; text-align: center; padding: 50px 20px; }
+        .thanks .big { font-size: 3rem; }
+        .thanks h2 { border: none; padding: 0; color: var(--primary-dark); margin: 10px 0; }
+
+        /* ハニーポット（人間には見えない） */
+        .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+        footer { text-align: center; padding: 30px 0; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border-color); }
+
+        @media (max-width: 600px) {
+            .survey-section { padding: 20px; }
+            .message { max-width: 100%; }
+            .stars label { font-size: 2.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Shell Arc 2026 フィードバックアンケート</h1>
+        <p>未定研 (2026) | 今年のプロジェクトお疲れさまでした</p>
+    </header>
+
+    <div class="container">
+
+        <div class="message">
+            <img src="nurutaro.png" alt="ぬるたろう" class="avatar" onerror="this.style.backgroundColor='#2e7d32'">
+            <div>
+                <span class="sender-name">ぬるたろう</span>
+                <div class="bubble">
+                    今年のプロジェクトお疲れさまぬる〜！Shell Arc をもっと良くするために、使ってみた感想を教えてほしいぬる。所要時間は<b>3〜5分</b>くらい、<b>必須は3問だけ</b>だぬる！
+                </div>
+            </div>
+        </div>
+
+        <div class="note-box">
+            🔒 <b>お名前は空欄でも送信できます</b>（空欄の場合は「匿名」として扱われ、重複送信を見分けるためのランダムな匿名IDが自動で付きます。個人は特定されません）。回答は運営チームの Discord チャンネルに投稿されます。
+        </div>
+
+        <div class="note-box">
+            📊 まだ今年の制作レビューを見ていない人は、先に<a href="review.html" style="color:var(--primary-dark);font-weight:bold;">こちら</a>でふりかえってからでもOKです（見なくても回答できます）。
+        </div>
+
+        <div class="note-box warn" id="repeatNotice" style="display:none;">
+            ⚠️ このブラウザからはすでに回答が送信されています。内容を追加・訂正したい場合のみ、もう一度送信してください。
+        </div>
+
+        <form id="surveyForm" novalidate>
+
+            <!-- ハニーポット：Bot対策。人間は入力しない -->
+            <div class="hp" aria-hidden="true">
+                <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
+
+            <!-- ===== 1. あなたについて ===== -->
+            <section class="survey-section">
+                <h2>1. あなたについて</h2>
+
+                <div class="q">
+                    <label class="q-label" for="nickname">お名前・ニックネーム<span class="opt">任意</span></label>
+                    <p class="hint">空欄の場合は「匿名-XXXXXX」のようなランダムIDで送信されます。</p>
+                    <input type="text" id="nickname" name="nickname" maxlength="40" autocomplete="off">
+                </div>
+
+                <fieldset class="q">
+                    <legend>主な担当・役割<span class="opt">任意</span></legend>
+                    <p class="hint">当てはまるものをすべて選んでください。</p>
+                    <div class="pill-group">
+                        <label class="pill"><input type="checkbox" name="role" value="作画"><span>作画</span></label>
+                        <label class="pill"><input type="checkbox" name="role" value="3D・モデリング"><span>3D・モデリング</span></label>
+                        <label class="pill"><input type="checkbox" name="role" value="背景"><span>背景</span></label>
+                        <label class="pill"><input type="checkbox" name="role" value="演出・監督"><span>演出・監督</span></label>
+                        <label class="pill"><input type="checkbox" name="role" value="作画監督等（チェック役）"><span>作画監督等（チェック役）</span></label>
+                        <label class="pill"><input type="checkbox" name="role" value="制作進行"><span>制作進行</span></label>
+                        <label class="pill"><input type="checkbox" name="role" value="管理者・開発"><span>管理者・開発</span></label>
+                        <label class="pill"><input type="checkbox" name="role" value="その他"><span>その他</span></label>
+                    </div>
+                </fieldset>
+            </section>
+
+            <!-- ===== 2. 全体の評価 ===== -->
+            <section class="survey-section">
+                <h2>2. 全体の評価</h2>
+
+                <fieldset class="q" data-required="satisfaction">
+                    <legend>Shell Arc の総合満足度<span class="req">必須</span></legend>
+                    <p class="hint">星をクリックして評価してください（★5 が最高）。</p>
+                    <div class="stars" id="satisfactionStars">
+                        <input type="radio" id="sat5" name="satisfaction" value="5"><label for="sat5" title="とても満足">★</label>
+                        <input type="radio" id="sat4" name="satisfaction" value="4"><label for="sat4" title="満足">★</label>
+                        <input type="radio" id="sat3" name="satisfaction" value="3"><label for="sat3" title="ふつう">★</label>
+                        <input type="radio" id="sat2" name="satisfaction" value="2"><label for="sat2" title="やや不満">★</label>
+                        <input type="radio" id="sat1" name="satisfaction" value="1"><label for="sat1" title="不満">★</label>
+                    </div>
+                    <p class="star-caption" id="satCaption">未選択</p>
+                    <p class="error-msg">総合満足度を選んでください。</p>
+                </fieldset>
+
+                <fieldset class="q">
+                    <legend>使い始めてから、普通に使いこなせるまでにどのくらいかかりましたか？<span class="opt">任意</span></legend>
+                    <p class="hint">新しいメンバーが入ったときの説明や、ガイドの改善に使います。</p>
+                    <div class="pill-group">
+                        <label class="pill"><input type="radio" name="learning" value="初日から問題なかった"><span>初日から問題なかった</span></label>
+                        <label class="pill"><input type="radio" name="learning" value="1週間以内"><span>1週間以内</span></label>
+                        <label class="pill"><input type="radio" name="learning" value="1か月以内"><span>1か月以内</span></label>
+                        <label class="pill"><input type="radio" name="learning" value="1か月以上かかった"><span>1か月以上かかった</span></label>
+                        <label class="pill"><input type="radio" name="learning" value="まだ慣れていない"><span>まだ慣れていない</span></label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="q">
+                    <legend>Shell Arc を他のチームやプロジェクトの人におすすめしたいですか？<span class="opt">任意</span></legend>
+                    <div class="scale-group">
+                        <script>
+                            // 0〜10 のピルを生成（HTMLの重複記述を避けるため）
+                            for (let i = 0; i <= 10; i++) {
+                                document.write('<label class="pill"><input type="radio" name="recommend" value="' + i + '"><span>' + i + '</span></label>');
+                            }
+                        </script>
+                    </div>
+                    <div class="scale-labels"><span>0 = まったくおすすめしない</span><span>10 = 強くおすすめする</span></div>
+                </fieldset>
+
+                <fieldset class="q">
+                    <legend>Shell Arc の導入前と比べて、作業の負担はどう変わりましたか？<span class="opt">任意</span></legend>
+                    <p class="hint">「ファイルを探す」「承認状況を確認する」「台帳を更新する」などの手間を思い浮かべてください。</p>
+                    <div class="pill-group">
+                        <label class="pill"><input type="radio" name="workload" value="とても楽になった"><span>とても楽になった</span></label>
+                        <label class="pill"><input type="radio" name="workload" value="やや楽になった"><span>やや楽になった</span></label>
+                        <label class="pill"><input type="radio" name="workload" value="変わらない"><span>変わらない</span></label>
+                        <label class="pill"><input type="radio" name="workload" value="やや増えた"><span>やや増えた</span></label>
+                        <label class="pill"><input type="radio" name="workload" value="とても増えた"><span>とても増えた</span></label>
+                    </div>
+                </fieldset>
+            </section>
+
+            <!-- ===== 3. 機能別の評価 ===== -->
+            <section class="survey-section">
+                <h2>3. 機能別の使いやすさ</h2>
+                <p class="hint" style="margin-bottom:6px;">
+                    使った機能だけで構いません。<b>1 = 使いにくい 〜 5 = とても使いやすい</b>。使っていないものは「未使用」を選ぶか、そのままスキップしてください。
+                </p>
+                <div id="featureList"></div>
+            </section>
+
+            <!-- ===== 4. 困ったこと ===== -->
+            <section class="survey-section">
+                <h2>4. 困ったこと・改善してほしいこと</h2>
+
+                <fieldset class="q">
+                    <legend>使っていて困ったことはありますか？<span class="opt">任意</span></legend>
+                    <p class="hint">当てはまるものをすべて選んでください。</p>
+                    <div class="check-list">
+                        <label class="check-item"><input type="checkbox" name="pain" value="コマンドを覚えにくい"> コマンドを覚えにくい</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="操作の流れが分かりにくい"> 操作の流れが分かりにくい</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="エラーの意味が分からない"> エラーの意味が分からない</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="エラーが多い・動作が不安定"> エラーが多い・動作が不安定</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="反応が遅い"> 反応が遅い</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="巨大ファイルの提出が大変"> 巨大ファイルの提出が大変</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="チェック待ちが滞りやすい"> チェック待ちが滞りやすい</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="通知・リマインドが足りない"> 通知・リマインドが足りない</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="解説ガイドが分かりにくい"> 解説ガイドが分かりにくい</label>
+                        <label class="check-item"><input type="checkbox" name="pain" value="特になし"> 特になし</label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="q">
+                    <legend>エラーコード（<code class="feature-cmd">SA_XXXX</code>）が表示されたことはありますか？<span class="opt">任意</span></legend>
+                    <div class="pill-group">
+                        <label class="pill"><input type="radio" name="errorSeen" value="なかった"><span>なかった</span></label>
+                        <label class="pill"><input type="radio" name="errorSeen" value="あったが自力で解決できた"><span>あったが自力で解決できた</span></label>
+                        <label class="pill"><input type="radio" name="errorSeen" value="あって解決できなかった"><span>あって解決できなかった</span></label>
+                    </div>
+                </fieldset>
+
+                <div class="q">
+                    <label class="q-label" for="errorDetail">見かけたエラーコードや、そのときの状況<span class="opt">任意</span></label>
+                    <p class="hint">例：「SA_5101 が出た。ファイルを付けたつもりだった」など。覚えている範囲で大丈夫です。</p>
+                    <textarea id="errorDetail" name="errorDetail" maxlength="500" data-counter="errorDetailCount"></textarea>
+                    <div class="char-count"><span id="errorDetailCount">0</span> / 500</div>
+                </div>
+
+                <fieldset class="q">
+                    <legend>解説ガイド（コマンド一覧ページ）の分かりやすさ<span class="opt">任意</span></legend>
+                    <div class="pill-group">
+                        <label class="pill"><input type="radio" name="docs" value="5"><span>5 とても分かりやすい</span></label>
+                        <label class="pill"><input type="radio" name="docs" value="4"><span>4</span></label>
+                        <label class="pill"><input type="radio" name="docs" value="3"><span>3 ふつう</span></label>
+                        <label class="pill"><input type="radio" name="docs" value="2"><span>2</span></label>
+                        <label class="pill"><input type="radio" name="docs" value="1"><span>1 分かりにくい</span></label>
+                        <label class="pill"><input type="radio" name="docs" value="0"><span>見ていない</span></label>
+                    </div>
+                </fieldset>
+            </section>
+
+            <!-- ===== 5. 自由記述 ===== -->
+            <section class="survey-section">
+                <h2>5. 自由記述</h2>
+
+                <div class="q">
+                    <label class="q-label" for="good">良かった点<span class="opt">任意</span></label>
+                    <textarea id="good" name="good" maxlength="800" data-counter="goodCount"></textarea>
+                    <div class="char-count"><span id="goodCount">0</span> / 800</div>
+                </div>
+
+                <div class="q" data-required-text="bad">
+                    <label class="q-label" for="bad">改善してほしい点<span class="req">必須</span></label>
+                    <p class="hint">特にない場合は「特になし」と書いてください。</p>
+                    <textarea id="bad" name="bad" maxlength="800" data-counter="badCount"></textarea>
+                    <div class="char-count"><span id="badCount">0</span> / 800</div>
+                    <p class="error-msg">改善してほしい点を入力してください。</p>
+                </div>
+
+                <div class="q" data-required-text="wish">
+                    <label class="q-label" for="wish">来年追加してほしい機能・やってみたいこと<span class="req">必須</span></label>
+                    <p class="hint">特にない場合は「特になし」と書いてください。</p>
+                    <textarea id="wish" name="wish" maxlength="800" data-counter="wishCount"></textarea>
+                    <div class="char-count"><span id="wishCount">0</span> / 800</div>
+                    <p class="error-msg">追加してほしい機能・やってみたいことを入力してください。</p>
+                </div>
+
+                <div class="q">
+                    <label class="q-label" for="other">その他、自由にどうぞ<span class="opt">任意</span></label>
+                    <textarea id="other" name="other" maxlength="800" data-counter="otherCount"></textarea>
+                    <div class="char-count"><span id="otherCount">0</span> / 800</div>
+                </div>
+            </section>
+
+            <div class="submit-area">
+                <div class="submit-error" id="submitError" role="alert"></div>
+                <button type="submit" class="submit-btn" id="submitBtn">📨 回答を送信する</button>
+            </div>
+        </form>
+
+        <section class="survey-section thanks" id="thanks">
+            <div class="big">🎉</div>
+            <h2>ご回答ありがとうございました！</h2>
+            <p>いただいたフィードバックは、来年の Shell Arc の改善に活かします。<br>今年のプロジェクト、本当にお疲れさまでした。</p>
+        </section>
+
+    </div>
+
+    <footer>
+        <p>&copy; 2026 未定研 (Miteiken). All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // =====================================================================
+        // 設定
+        // ---------------------------------------------------------------------
+        // ★ 公開前に、下の "DISCORD_WEBHOOK" の【引用符の中の文字列だけ】を
+        //   実際のWebhook URL（https://discord.com/api/webhooks/...）に置き換えてください。
+        //   ※ 変数名（const DISCORD_WEBHOOK）まで置換すると動かなくなります。
+        // =====================================================================
+        const DISCORD_WEBHOOK = "DISCORD_WEBHOOK";
+
+        const SURVEY_TITLE   = "Shell Arc 2026 フィードバック";
+        const EMBED_COLOR    = 0x2e7d32;      // サイトのテーマカラー
+        const STORAGE_KEY    = "shellarc2026_survey_submitted";
+        const MIN_FILL_MS    = 4000;          // 開いてから4秒未満の送信はBotとみなして弾く
+        const openedAt       = Date.now();
+
+        // 機能別評価の対象（編集・追加はここだけでOK）
+        const FEATURES = [
+            { id: "up",      cmd: "..up",                       label: "ファイル提出" },
+            { id: "upbig",   cmd: "..upbig / ..iupbig",         label: "巨大ファイルの提出" },
+            { id: "dl",      cmd: "..dl",                       label: "ファイルの受け取り" },
+            { id: "appr",    cmd: "..appr / ..check",           label: "承認・チェック（作画監督等）" },
+            { id: "reg",     cmd: "..reg",                      label: "担当登録" },
+            { id: "history", cmd: "..history / ..status",       label: "履歴・チェック待ち一覧" },
+            { id: "lo",      cmd: "..lo",                       label: "レイアウト（LO）の管理" },
+            { id: "itemi",   cmd: "..itemi / ..remind / ..memo", label: "いてみちゃん（スケジュール・リマインド・メモ）" },
+            { id: "nuru",    cmd: "..nuru",                     label: "ぬるたろう（技術サポート）" }
+        ];
+
+        // ---------- 機能別評価UIの生成 ----------
+        (function renderFeatures() {
+            const wrap = document.getElementById("featureList");
+            FEATURES.forEach(f => {
+                const row = document.createElement("div");
+                row.className = "feature-row";
+
+                const head = document.createElement("div");
+                head.className = "feature-head";
+                const name = document.createElement("span");
+                name.className = "feature-name";
+                name.textContent = f.label;
+                const cmd = document.createElement("span");
+                cmd.className = "feature-cmd";
+                cmd.textContent = f.cmd;
+                head.append(name, cmd);
+
+                const group = document.createElement("div");
+                group.className = "scale-group";
+                group.setAttribute("role", "radiogroup");
+                group.setAttribute("aria-label", f.label + "の評価");
+
+                const options = [["0", "未使用"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"]];
+                options.forEach(([val, text]) => {
+                    const lbl = document.createElement("label");
+                    lbl.className = "pill";
+                    const inp = document.createElement("input");
+                    inp.type = "radio";
+                    inp.name = "feat_" + f.id;
+                    inp.value = val;
+                    const sp = document.createElement("span");
+                    sp.textContent = text;
+                    lbl.append(inp, sp);
+                    group.appendChild(lbl);
+                });
+
+                row.append(head, group);
+                wrap.appendChild(row);
+            });
+        })();
+
+        // ---------- 星評価のキャプション ----------
+        const SAT_TEXT = { 1: "不満", 2: "やや不満", 3: "ふつう", 4: "満足", 5: "とても満足" };
+        document.querySelectorAll('input[name="satisfaction"]').forEach(r => {
+            r.addEventListener("change", () => {
+                document.getElementById("satCaption").textContent = r.value + " : " + SAT_TEXT[r.value];
+            });
+        });
+
+        // ---------- 文字数カウンタ ----------
+        document.querySelectorAll("textarea[data-counter]").forEach(t => {
+            const out = document.getElementById(t.dataset.counter);
+            const upd = () => { out.textContent = t.value.length; };
+            t.addEventListener("input", upd);
+            upd();
+        });
+
+        // ---------- 回答済み表示（localStorageが使えない環境でも壊れないように） ----------
+        function hasSubmittedBefore() {
+            try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch (e) { return false; }
+        }
+        function markSubmitted() {
+            try { localStorage.setItem(STORAGE_KEY, "1"); } catch (e) { /* 無視 */ }
+        }
+        if (hasSubmittedBefore()) {
+            document.getElementById("repeatNotice").style.display = "block";
+        }
+
+        // ---------- 匿名ID（二重投稿の判別用） ----------
+        // ブラウザごとに1回だけ生成して保存する。同じブラウザからの再送は同じIDになるため、
+        // Discord上で重複回答に気づける。個人情報とは無関係の乱数。
+        // 紛らわしい文字（0/O, 1/I/L）は除外。31種 × 6桁 ≒ 8.9億通り。
+        const ANON_ID_KEY = "shellarc2026_survey_anon_id";
+        let anonIdCache = null;   // localStorageが使えない場合も、同じページ滞在中は同じIDにする
+
+        function generateAnonId() {
+            const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";   // 31文字
+            const len = 6;
+            const buf = new Uint32Array(len);
+            (window.crypto || window.msCrypto).getRandomValues(buf);
+            let id = "";
+            for (let i = 0; i < len; i++) id += chars[buf[i] % chars.length];
+            return id;
+        }
+
+        function getAnonId() {
+            if (anonIdCache) return anonIdCache;
+            let id = null;
+            try { id = localStorage.getItem(ANON_ID_KEY); } catch (e) { /* 無視 */ }
+            if (!id || !/^[A-Z0-9]{6}$/.test(id)) {
+                id = generateAnonId();
+                try { localStorage.setItem(ANON_ID_KEY, id); } catch (e) { /* 保存できなくても動作は続ける */ }
+            }
+            anonIdCache = id;
+            return id;
+        }
+
+        // ---------- 入力値の収集 ----------
+        function radioVal(name) {
+            const el = document.querySelector('input[name="' + name + '"]:checked');
+            return el ? el.value : "";
+        }
+        function checkedVals(name) {
+            return Array.from(document.querySelectorAll('input[name="' + name + '"]:checked')).map(e => e.value);
+        }
+        function textVal(id) {
+            return document.getElementById(id).value.trim();
+        }
+
+        function collect() {
+            const features = FEATURES.map(f => ({ ...f, value: radioVal("feat_" + f.id) })).filter(f => f.value !== "");
+            return {
+                nickname:     textVal("nickname") || ("匿名-" + getAnonId()),
+                roles:        checkedVals("role"),
+                satisfaction: radioVal("satisfaction"),
+                learning:     radioVal("learning"),
+                recommend:    radioVal("recommend"),
+                workload:     radioVal("workload"),
+                features:     features,
+                pains:        checkedVals("pain"),
+                errorSeen:    radioVal("errorSeen"),
+                errorDetail:  textVal("errorDetail"),
+                docs:         radioVal("docs"),
+                good:         textVal("good"),
+                bad:          textVal("bad"),
+                wish:         textVal("wish"),
+                other:        textVal("other")
+            };
+        }
+
+        // ---------- Discord送信用ペイロード ----------
+        const stars = n => "★".repeat(n) + "☆".repeat(5 - n);
+        const clip  = (s, max) => (s.length > max ? s.slice(0, max - 1) + "…" : s);
+
+        function buildPayload(d) {
+            const sat = parseInt(d.satisfaction, 10);
+
+            // Embed 1: 概要
+            const summaryFields = [
+                { name: "👤 回答者",       value: clip(d.nickname, 100), inline: true },
+                { name: "🎭 担当・役割",   value: d.roles.length ? clip(d.roles.join(" / "), 1000) : "（未回答）", inline: true },
+                { name: "⭐ 総合満足度",   value: stars(sat) + "  (" + sat + "/5)", inline: false },
+            ];
+            if (d.learning)         summaryFields.push({ name: "🌱 使いこなすまで", value: d.learning, inline: true });
+            if (d.recommend !== "") summaryFields.push({ name: "📣 おすすめ度", value: d.recommend + " / 10", inline: true });
+            if (d.workload)         summaryFields.push({ name: "🛠️ 作業負担の変化", value: d.workload, inline: true });
+            if (d.docs !== "")      summaryFields.push({ name: "📖 解説ガイド", value: d.docs === "0" ? "見ていない" : stars(parseInt(d.docs, 10)) + "  (" + d.docs + "/5)", inline: true });
+
+            const embeds = [{
+                title: "📝 " + SURVEY_TITLE,
+                color: EMBED_COLOR,
+                fields: summaryFields,
+                timestamp: new Date().toISOString()
+            }];
+
+            // Embed 2: 機能別評価
+            if (d.features.length) {
+                const lines = d.features.map(f => {
+                    const score = f.value === "0" ? "未使用" : stars(parseInt(f.value, 10)) + " " + f.value;
+                    return "`" + f.cmd + "` " + f.label + "\n　→ " + score;
+                });
+                embeds.push({ title: "🧰 機能別の使いやすさ", color: EMBED_COLOR, description: clip(lines.join("\n"), 4000) });
+            }
+
+            // Embed 3: 困りごと・自由記述（空の項目は送らない：Discordは空のfield値を拒否する）
+            const textFields = [];
+            if (d.pains.length)  textFields.push({ name: "😣 困ったこと", value: clip(d.pains.join(" / "), 1000) });
+            if (d.errorSeen)     textFields.push({ name: "🚨 エラーコードの遭遇", value: d.errorSeen });
+            if (d.errorDetail)   textFields.push({ name: "🚨 エラーの状況", value: clip(d.errorDetail, 1000) });
+            if (d.good)          textFields.push({ name: "👍 良かった点", value: clip(d.good, 1000) });
+            if (d.bad)           textFields.push({ name: "🔧 改善してほしい点", value: clip(d.bad, 1000) });
+            if (d.wish)          textFields.push({ name: "💡 追加してほしい機能", value: clip(d.wish, 1000) });
+            if (d.other)         textFields.push({ name: "💬 その他", value: clip(d.other, 1000) });
+            if (textFields.length) embeds.push({ title: "🗒️ 困りごと・自由記述", color: EMBED_COLOR, fields: textFields });
+
+            return {
+                username: "Shell Arc アンケート",
+                content: "📨 新しいフィードバックが届きました",
+                // 自由記述に @everyone や <@id> が入っていても通知が飛ばないようにする
+                allowed_mentions: { parse: [] },
+                embeds: embeds
+            };
+        }
+
+        // ---------- バリデーション ----------
+        function validate() {
+            let firstBad = null;
+            // data-required = ラジオ必須 / data-required-text = テキスト必須（画面上の並び順で判定）
+            document.querySelectorAll("[data-required], [data-required-text]").forEach(el => {
+                let ok;
+                if (el.dataset.requiredText) {
+                    ok = document.getElementById(el.dataset.requiredText).value.trim() !== "";
+                } else {
+                    ok = !!document.querySelector('input[name="' + el.dataset.required + '"]:checked');
+                }
+                el.classList.toggle("invalid", !ok);
+                if (!ok && !firstBad) firstBad = el;
+            });
+            if (firstBad) firstBad.scrollIntoView({ behavior: "smooth", block: "center" });
+            return !firstBad;
+        }
+        // 入力・選択されたらエラー表示を消す
+        document.querySelectorAll("[data-required], [data-required-text]").forEach(el => {
+            el.addEventListener("change", () => el.classList.remove("invalid"));
+            el.addEventListener("input",  () => el.classList.remove("invalid"));
+        });
+
+        // ---------- 送信 ----------
+        function showError(msg) {
+            const box = document.getElementById("submitError");
+            box.textContent = msg;
+            box.style.display = "block";
+        }
+        function clearError() {
+            document.getElementById("submitError").style.display = "none";
+        }
+
+        document.getElementById("surveyForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            clearError();
+
+            // Bot対策：ハニーポットが埋まっている／短時間すぎる送信は、成功したふりをして捨てる
+            const honeypot = document.querySelector('input[name="website"]').value;
+            if (honeypot || Date.now() - openedAt < MIN_FILL_MS) {
+                if (!honeypot) { showError("入力内容をもう一度確認してから、少し待って送信してください。"); return; }
+                showThanks();
+                return;
+            }
+
+            if (!validate()) return;
+
+            const payload = buildPayload(collect());
+
+            // Webhook未設定のときは送信せず、中身をコンソールに出す（動作確認用）
+            if (!DISCORD_WEBHOOK.startsWith("https://")) {
+                console.log("[DRY RUN] Webhook未設定のため送信しません。送信予定の内容:", payload);
+                showError("Discord Webhook URL が未設定です（管理者向け：survey.html 内の DISCORD_WEBHOOK を設定してください）。");
+                return;
+            }
+
+            const btn = document.getElementById("submitBtn");
+            btn.disabled = true;
+            btn.textContent = "送信中…";
+
+            try {
+                const res = await fetch(DISCORD_WEBHOOK, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {            // Discordは成功時 204 No Content を返す
+                    markSubmitted();
+                    showThanks();
+                } else if (res.status === 429) {
+                    showError("短時間に送信が集中しています。少し待ってからもう一度お試しください。");
+                    resetBtn(btn);
+                } else {
+                    console.error("Discord webhook error:", res.status, await res.text().catch(() => ""));
+                    showError("送信に失敗しました（エラーコード: " + res.status + "）。時間をおいて再度お試しください。改善しない場合は運営までご連絡ください。");
+                    resetBtn(btn);
+                }
+            } catch (err) {
+                console.error(err);
+                showError("通信エラーで送信できませんでした。ネットワーク接続を確認して、もう一度お試しください。");
+                resetBtn(btn);
+            }
+        });
+
+        function resetBtn(btn) {
+            btn.disabled = false;
+            btn.textContent = "📨 回答を送信する";
+        }
+
+        function showThanks() {
+            document.getElementById("surveyForm").style.display = "none";
+            document.getElementById("repeatNotice").style.display = "none";
+            document.getElementById("thanks").style.display = "block";
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    </script>
+
+</body>
+</html>

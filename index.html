@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shell Arc 2026 - ふりかえり & アンケート</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { background: #1b5e20; }   /* 背景グラデーションが届かない領域（オーバースクロール等）が白く見えないように */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+            color: #fff; line-height: 1.6; min-height: 100vh;
+            background: linear-gradient(160deg, #1b5e20 0%, #2e7d32 50%, #00897b 100%) fixed;
+            position: relative; overflow-x: hidden;
+        }
+        /* ゆらゆら動く背景のぼかし（動きを減らす設定のときは止める） */
+        body::before, body::after { content: ""; position: fixed; border-radius: 50%; filter: blur(60px); z-index: 0; pointer-events: none; animation: float 10s ease-in-out infinite alternate; }
+        body::before { width: 340px; height: 340px; background: #a5d6a7; opacity: 0.3; top: -100px; right: -120px; }
+        body::after  { width: 380px; height: 380px; background: #00e676; opacity: 0.18; bottom: -140px; left: -140px; animation-delay: -5s; }
+
+        .wrap { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 44px 18px 40px; }
+
+        header { margin-bottom: 22px; }
+        .eyebrow { font-size: 0.72rem; letter-spacing: 0.25em; font-weight: 800; opacity: 0.85; }
+        h1 { font-size: 2.4rem; line-height: 1.15; font-weight: 900; letter-spacing: -0.01em; margin: 6px 0 8px; }
+        h1 span { color: #ffeb3b; }
+        .lead { font-size: 1rem; opacity: 0.95; }
+
+        .nuru { display: flex; align-items: flex-start; gap: 10px; margin: 20px 0 24px; }
+        .nuru img, .nuru .fb { width: 46px; height: 46px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); object-fit: cover; flex-shrink: 0; background: #a5d6a7; }
+        .nuru .fb { display: flex; align-items: center; justify-content: center; font-weight: 900; background: #2e7d32; }
+        .nuru .bubble {
+            background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.35); border-radius: 18px 18px 18px 4px; padding: 10px 14px; font-size: 0.92rem;
+        }
+
+        /* ===== 選択カード ===== */
+        .choices { display: flex; flex-direction: column; gap: 14px; list-style: none; }
+        .card {
+            position: relative; display: block; text-decoration: none; color: #1b3a1f; background: #fff;
+            border-radius: 18px; padding: 18px 18px 16px 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+            border: 3px solid transparent; transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(0,0,0,0.3); }
+        .card:active { transform: scale(0.985); }
+        .card:focus-visible { outline: 4px solid #ffeb3b; outline-offset: 3px; }
+        .card .top { display: flex; align-items: center; gap: 12px; }
+        .card .icon { font-size: 2.2rem; line-height: 1; flex-shrink: 0; }
+        .card h2 { font-size: 1.2rem; line-height: 1.3; font-weight: 900; flex: 1; }
+        .card .go { font-size: 1.4rem; font-weight: 900; opacity: 0.55; transition: transform 0.18s, opacity 0.18s; }
+        .card:hover .go { transform: translateX(4px); opacity: 1; }
+        .card p { font-size: 0.9rem; margin-top: 8px; color: #37513a; }
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .chips span { font-size: 0.74rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #e8f5e9; color: #1b5e20; }
+        .badge { position: absolute; top: -10px; right: 14px; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.1em; padding: 3px 12px; border-radius: 999px; }
+
+        .card.review { border-color: #a5d6a7; }
+        .card.review .badge { background: #ffeb3b; color: #4e342e; }
+        .card.dopa { background: linear-gradient(160deg, #1b0a3d, #3b1170 60%, #5b1a7a); color: #fff; border-color: #ff2d95; box-shadow: 0 8px 28px rgba(255,45,149,0.4); }
+        .card.dopa p { color: rgba(255,255,255,0.88); }
+        .card.dopa .chips span { background: rgba(255,255,255,0.14); color: #fff; }
+        .card.dopa .badge { background: linear-gradient(90deg, #ff2d95, #ff9100); color: #fff; }
+        .card.dopa h2 { background: linear-gradient(90deg, #ff80ab, #ffeb3b, #80d8ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .card.survey { border-color: #fff; }
+
+        .note { margin-top: 22px; font-size: 0.8rem; opacity: 0.88; text-align: center; line-height: 1.7; }
+        footer { margin-top: 26px; text-align: center; font-size: 0.78rem; opacity: 0.75; }
+
+        .rise { opacity: 0; animation: rise 0.7s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: var(--d, 0s); }
+
+        @keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+        @keyframes float { from { transform: translate(0, 0) scale(1); } to { transform: translate(30px, 24px) scale(1.12); } }
+        @media (prefers-reduced-motion: reduce) {
+            body::before, body::after { animation: none; }
+            .rise { animation: none; opacity: 1; }
+            .card, .card .go { transition: none; }
+        }
+        @media (max-width: 420px) { h1 { font-size: 2rem; } .card h2 { font-size: 1.08rem; } }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header class="rise" style="--d:0s">
+            <div class="eyebrow">MITEIKEN 2026</div>
+            <h1>Shell Arc <span>2026</span></h1>
+            <p class="lead">今年のプロジェクト、おつかれさまでした！<br>見たい形式を選んでください。</p>
+        </header>
+
+        <div class="nuru rise" style="--d:0.12s">
+            <img src="nurutaro.png" alt="ぬるたろう" onerror="var d=document.createElement('div');d.className='fb';d.setAttribute('aria-hidden','true');d.textContent='ぬ';this.replaceWith(d)">
+            <div class="bubble">今年のふりかえりを用意したぬる〜！ 好きなルートを選んでぬる。</div>
+        </div>
+
+        <ul class="choices">
+            <li class="rise" style="--d:0.24s">
+                <a class="card review" href="review.html">
+                    <span class="badge">おすすめ</span>
+                    <div class="top"><span class="icon" aria-hidden="true">📊</span><h2>制作レビューを見る</h2><span class="go" aria-hidden="true">→</span></div>
+                    <p>今年の提出ログを集計して、スライド形式でふりかえります。最後にアンケートへ進めます。</p>
+                    <div class="chips"><span>⏱ 約2〜3分</span><span>👤 名前を選ぶと自分のレビューも</span></div>
+                </a>
+            </li>
+            <li class="rise" style="--d:0.36s">
+                <a class="card dopa" href="review_dopa.html">
+                    <span class="badge">JOKE</span>
+                    <div class="top"><span class="icon" aria-hidden="true">🎮</span><h2>ドパガキさん向けモード</h2><span class="go" aria-hidden="true">→</span></div>
+                    <p>同じログをゲームにしたジョークモード。ログを集めてガチャを回し、〆切ドラゴンを倒します。最後はアンケートへ。</p>
+                    <div class="chips"><span>⏱ 約3〜5分</span><span>⚡ 光・揺れ・音あり（開始前に調整OK）</span></div>
+                </a>
+            </li>
+            <li class="rise" style="--d:0.48s">
+                <a class="card survey" href="survey.html">
+                    <div class="top"><span class="icon" aria-hidden="true">📝</span><h2>アンケートに直行する</h2><span class="go" aria-hidden="true">→</span></div>
+                    <p>Shell Arc を使ってみた感想を聞かせてください。レビューを見なくても回答できます。</p>
+                    <div class="chips"><span>⏱ 約3〜5分</span><span>✅ 必須は3問だけ</span></div>
+                </a>
+            </li>
+        </ul>
+
+        <p class="note rise" style="--d:0.6s">どれを選んでも、最後はアンケートに答えられます。<br>名前を空欄のまま送信すれば、匿名で回答できます。</p>
+        <footer class="rise" style="--d:0.68s">&copy; 2026 未定研 (Miteiken). All Rights Reserved.</footer>
+    </div>
+</body>
+</html>

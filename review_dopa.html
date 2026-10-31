@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Shell Arc 2026 - ドパガキMODE（ふりかえりゲーム）</title>
+    <style>
+        :root { --n1: #ff2d95; --n2: #00e5ff; --n3: #ffeb3b; --n4: #76ff03; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+            background: #07000f; color: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        [hidden] { display: none !important; }
+        button, a, select, input { font-family: inherit; }
+        :focus-visible { outline: 3px solid var(--n3); outline-offset: 2px; }
+
+        .stage {
+            position: relative; width: min(100vw, 460px); height: 100vh; height: min(100dvh, 880px); overflow: hidden;
+            background: linear-gradient(170deg, #12002b 0%, #240a4d 55%, #0b2a5b 100%);
+            touch-action: manipulation; user-select: none; -webkit-user-select: none;
+        }
+        @media (min-width: 520px) { .stage { border-radius: 24px; box-shadow: 0 0 60px rgba(255,45,149,0.35), 0 0 120px rgba(0,229,255,0.2); } }
+        .stage.shake { animation: shake 0.3s; }
+
+        /* ===== ボタン ===== */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 22px; border-radius: 14px;
+            font-size: 1rem; font-weight: 900; cursor: pointer; border: 2px solid transparent; text-decoration: none; color: #fff;
+            transition: transform 0.12s, filter 0.12s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { filter: grayscale(1) brightness(0.6); cursor: not-allowed; }
+        .btn.pink { background: linear-gradient(135deg, #ff2d95, #ff6a3d); box-shadow: 0 0 18px rgba(255,45,149,0.6); }
+        .btn.cyan { background: linear-gradient(135deg, #00b8d4, #2979ff); box-shadow: 0 0 18px rgba(0,229,255,0.5); }
+        .btn.gold { background: linear-gradient(135deg, #ffd600, #ff9100); color: #3e2700; box-shadow: 0 0 18px rgba(255,214,0,0.6); }
+        .btn.ghost { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.35); }
+        .btn.small { padding: 8px 14px; font-size: 0.8rem; border-radius: 10px; }
+        .link { color: rgba(255,255,255,0.8); font-size: 0.82rem; text-decoration: underline; text-underline-offset: 3px; background: none; border: none; cursor: pointer; }
+        .link:hover { color: #fff; }
+
+        .rainbow {
+            background: linear-gradient(90deg, #ff2d95, #ffeb3b, #00e5ff, #ff2d95); background-size: 300% 100%;
+            -webkit-background-clip: text; background-clip: text; color: transparent; animation: rb 4s linear infinite;
+        }
+        .eyebrow { font-size: 0.7rem; letter-spacing: 0.25em; font-weight: 800; color: var(--n2); text-shadow: 0 0 8px rgba(0,229,255,0.8); }
+
+        /* ===== HUD ===== */
+        .hud { position: absolute; z-index: 40; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: linear-gradient(180deg, rgba(0,0,0,0.55), transparent); }
+        .hud .lv { flex: 1; min-width: 0; }
+        .hud .lv b { font-size: 0.78rem; letter-spacing: 0.12em; color: var(--n3); text-shadow: 0 0 8px rgba(255,235,59,0.7); }
+        .xpbar { height: 8px; margin-top: 3px; background: rgba(255,255,255,0.15); border-radius: 6px; overflow: hidden; }
+        .xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--n2), var(--n1)); transition: width 0.3s; }
+        .coins { font-weight: 900; font-variant-numeric: tabular-nums; text-shadow: 0 0 8px rgba(0,229,255,0.8); }
+        .tool { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #fff; font-size: 0.9rem; cursor: pointer; }
+        .tool.off { opacity: 0.55; }
+
+        /* ===== 画面 ===== */
+        .screen { position: absolute; inset: 0; display: none; flex-direction: column; padding: 86px 16px 12px; gap: 10px; overflow: hidden; }
+        .screen.active { display: flex; }
+        #scr-title { padding-top: 20px; overflow-y: auto; gap: 14px; }
+        #scr-title > :first-child { margin-top: auto; }
+        #scr-title > :last-child { margin-bottom: auto; }
+        #scr-title > * { flex-shrink: 0; }
+        .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; }
+        .h2 { font-size: 1.35rem; font-weight: 900; letter-spacing: 0.02em; }
+        .sub { font-size: 0.9rem; opacity: 0.9; }
+
+        .title-h1 { font-size: 3.6rem; line-height: 1; font-weight: 900; letter-spacing: -0.02em; }
+        .warn { font-size: 0.78rem; line-height: 1.5; background: rgba(255,214,0,0.12); border: 1px dashed rgba(255,214,0,0.6); border-radius: 12px; padding: 10px 12px; }
+        .status { font-size: 0.82rem; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px 14px; }
+        .status.err { background: rgba(183,28,28,0.6); }
+        .status .detail { font-size: 0.74rem; margin-top: 6px; opacity: 0.92; word-break: break-all; line-height: 1.5; }
+        .namepick { background: rgba(0,0,0,0.28); border-radius: 14px; padding: 12px; }
+        .namepick .np-title { font-size: 0.82rem; font-weight: 800; margin-bottom: 8px; }
+        .namepick input[type="search"] { width: 100%; padding: 9px 12px; border-radius: 10px; border: none; font-size: 0.9rem; margin-bottom: 8px; background: #fff; color: #240a4d; }
+        .namelist { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; }
+        .chipcheck { position: relative; }
+        .chipcheck input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+        .chipcheck span { display: inline-block; padding: 5px 11px; border-radius: 999px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); font-size: 0.8rem; font-weight: 700; overflow-wrap: anywhere; }
+        .chipcheck input:checked + span { background: var(--n3); border-color: var(--n3); color: #240a4d; }
+        .chipcheck input:focus-visible + span { outline: 3px solid #fff; outline-offset: 2px; }
+        .picked { font-size: 0.76rem; margin-top: 8px; opacity: 0.95; overflow-wrap: anywhere; }
+        .note { font-size: 0.72rem; opacity: 0.75; margin-top: 6px; line-height: 1.5; }
+        .btn-row { display: flex; gap: 10px; }
+        .btn-row .btn { flex: 1; }
+        .links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+        .file-label input { display: none; }
+
+        /* ===== ログ・ラッシュ ===== */
+        .rush-top { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.88rem; }
+        .rush-top .date { color: var(--n2); text-shadow: 0 0 8px rgba(0,229,255,0.7); font-variant-numeric: tabular-nums; }
+        .tl { height: 6px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+        .tl i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--n2), var(--n3)); }
+        .field { position: relative; flex: 1; overflow: hidden; border: 2px solid rgba(255,255,255,0.18); border-radius: 16px; background: rgba(0,0,0,0.28); }
+        .log {
+            position: absolute; top: -80px; width: 112px; padding: 7px 9px; border-radius: 12px; font-size: 0.7rem; line-height: 1.25; cursor: pointer;
+            background: linear-gradient(160deg, #1565c0, #00acc1); border: 1px solid rgba(255,255,255,0.55); box-shadow: 0 0 14px rgba(0,229,255,0.55);
+            animation: fall var(--dur, 2.4s) linear forwards;
+        }
+        .log b { display: block; font-size: 0.62rem; letter-spacing: 0.12em; opacity: 0.9; }
+        .log span { display: block; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .log em { display: block; font-style: normal; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .log.gold { background: linear-gradient(160deg, #ff8f00, #ffd600); color: #3e2700; box-shadow: 0 0 20px rgba(255,214,0,0.95); }
+        .log.rain { background: linear-gradient(135deg, #ff2d95, #ffeb3b, #00e5ff); color: #111; box-shadow: 0 0 20px rgba(255,255,255,0.9); }
+        .log.hit { animation: hit 0.2s forwards; pointer-events: none; }
+        .combo-label { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-size: 2.4rem; font-weight: 900; pointer-events: none; opacity: 0; text-shadow: 0 0 14px rgba(255,45,149,0.9); }
+        .combo-label.on { animation: combo 0.5s ease-out; }
+        .ready { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(0,0,0,0.55); text-align: center; padding: 20px; z-index: 5; }
+        .ready .count { font-size: 5rem; font-weight: 900; }
+
+        /* ===== ガチャ ===== */
+        .machine { text-align: center; font-size: 5.2rem; line-height: 1; filter: drop-shadow(0 0 18px rgba(255,45,149,0.8)); }
+        .machine.shaking { animation: shake 0.5s infinite; }
+        .btn-row .btn { font-size: 0.9rem; padding: 12px 10px; }
+        .gacha-info { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 800; }
+        .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 8px; overflow-y: auto; padding: 4px 2px; flex: 1; align-content: start; }
+        .slot { aspect-ratio: 1; border-radius: 12px; border: 2px dashed rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); font-size: 1.5rem; color: rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; cursor: default; position: relative; }
+        .slot.owned { border-style: solid; color: #fff; cursor: pointer; }
+        .slot.owned.new::after { content: "NEW"; position: absolute; top: -6px; right: -6px; font-size: 0.55rem; font-weight: 900; background: var(--n1); border-radius: 6px; padding: 1px 4px; }
+        .rar-N  { --rc: #90a4ae; } .rar-R { --rc: #42a5f5; } .rar-SR { --rc: #ba68c8; } .rar-SSR { --rc: #ffca28; } .rar-UR { --rc: #ff2d95; }
+        .slot.owned { border-color: var(--rc); box-shadow: 0 0 12px var(--rc); }
+        .slot-help { font-size: 0.74rem; opacity: 0.8; }
+
+        .overlay { position: absolute; inset: 0; z-index: 60; background: rgba(5,0,15,0.88); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 14px; padding: 18px; overflow-y: auto; }
+        .overlay > :first-child { margin-top: auto; }
+        .overlay > :last-child { margin-bottom: auto; }
+        .overlay > * { flex-shrink: 0; }
+        .capsule { font-size: 7rem; animation: shake 0.35s infinite; filter: drop-shadow(0 0 24px #ff2d95); }
+        .card {
+            position: relative; width: min(300px, 100%); padding: 22px 18px 18px; border-radius: 20px; text-align: center; background: linear-gradient(160deg, #1b1040, #2a1260);
+            border: 3px solid var(--rc); box-shadow: 0 0 26px var(--rc), inset 0 0 30px rgba(255,255,255,0.05); animation: flip 0.6s cubic-bezier(.2,.9,.3,1.2);
+        }
+        .card .rar { position: absolute; top: 10px; left: 14px; font-weight: 900; letter-spacing: 0.15em; color: var(--rc); text-shadow: 0 0 10px var(--rc); }
+        .card .you { position: absolute; top: 10px; right: 14px; background: var(--n3); color: #240a4d; font-size: 0.62rem; font-weight: 900; letter-spacing: 0.1em; padding: 2px 8px; border-radius: 999px; }
+        .card .icon { font-size: 3.4rem; line-height: 1.2; margin-top: 10px; }
+        .card .title { font-size: 0.95rem; font-weight: 800; opacity: 0.95; margin-top: 4px; }
+        .card .big { font-size: 2rem; font-weight: 900; line-height: 1.2; margin: 8px 0; overflow-wrap: anywhere; color: #fff; text-shadow: 0 0 12px var(--rc); }
+        .card .sub { font-size: 0.82rem; opacity: 0.9; line-height: 1.5; overflow-wrap: anywhere; }
+        .card.rar-UR { border-color: transparent; background: linear-gradient(#1b1040, #2a1260) padding-box, linear-gradient(120deg, #ff2d95, #ffeb3b, #00e5ff, #76ff03, #ff2d95) border-box; background-size: auto, 300% 300%; animation: flip 0.6s cubic-bezier(.2,.9,.3,1.2), rb2 3s linear infinite; }
+        .grid-result { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 340px; }
+        .grid-result.dense { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .grid-result.dense .mini { padding: 8px 4px; }
+        .grid-result.dense .mini .b { font-size: 0.8rem; }
+        .mini { padding: 10px 8px; border-radius: 14px; text-align: center; border: 2px solid var(--rc); background: linear-gradient(160deg, #1b1040, #2a1260); box-shadow: 0 0 12px var(--rc); animation: flip 0.5s both; animation-delay: var(--d, 0s); }
+        .mini .rar { font-size: 0.65rem; font-weight: 900; letter-spacing: 0.12em; color: var(--rc); }
+        .mini .icon { font-size: 1.7rem; }
+        .mini .t { font-size: 0.7rem; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mini .b { font-size: 0.95rem; font-weight: 900; overflow-wrap: anywhere; line-height: 1.2; }
+
+        /* ===== ボス ===== */
+        .boss-name { text-align: center; font-weight: 900; font-size: 1.05rem; letter-spacing: 0.08em; }
+        .hp { height: 20px; border-radius: 12px; background: rgba(255,255,255,0.12); overflow: hidden; border: 2px solid rgba(255,255,255,0.35); }
+        .hp i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ff1744, #ff9100); transition: width 0.15s; }
+        .hp-num { text-align: center; font-size: 0.82rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .arena { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 0; }
+        .boss-btn { background: none; border: none; font-size: 8rem; line-height: 1; cursor: pointer; filter: drop-shadow(0 0 22px rgba(255,23,68,0.8)); transition: transform 0.08s; }
+        .boss-btn.hurt { transform: scale(0.88) rotate(-4deg); }
+        .boss-btn.dead { animation: dead 1s forwards; pointer-events: none; }
+        .fever { height: 22px; font-weight: 900; font-size: 0.9rem; color: var(--n3); text-shadow: 0 0 10px rgba(255,235,59,0.9); }
+        .ult { display: flex; align-items: center; gap: 10px; }
+        .ult .gauge { flex: 1; height: 12px; border-radius: 8px; background: rgba(255,255,255,0.12); overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+        .ult .gauge i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--n2), var(--n3), var(--n1)); transition: width 0.1s; }
+        .boss-say { min-height: 2.6em; text-align: center; font-size: 0.82rem; opacity: 0.95; padding: 0 6px; }
+        .atk { position: absolute; left: 50%; font-weight: 900; white-space: nowrap; transform: translateX(-50%); animation: atk 0.7s ease-in forwards; text-shadow: 0 0 10px #000; }
+
+        /* ===== 結果 ===== */
+        .result-card { text-align: center; padding: 18px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+        .result-card .rank { font-size: 3.2rem; font-weight: 900; line-height: 1.1; }
+        .result-card .dopa { font-size: 1.1rem; font-weight: 800; margin-top: 4px; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .st { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 9px 6px; text-align: center; }
+        .st .k { font-size: 0.66rem; opacity: 0.8; } .st .v { font-size: 1.15rem; font-weight: 900; }
+        .achv { display: flex; flex-wrap: wrap; gap: 6px; max-height: 96px; overflow-y: auto; }
+        .achv span { font-size: 0.72rem; background: rgba(255,214,0,0.15); border: 1px solid rgba(255,214,0,0.5); border-radius: 999px; padding: 3px 9px; }
+
+        /* ===== エフェクト ===== */
+        #fx { position: absolute; inset: 0; pointer-events: none; z-index: 80; overflow: hidden; }
+        .pop { position: absolute; transform: translate(-50%, -50%); font-weight: 900; text-shadow: 0 0 8px #000; white-space: nowrap; animation: popup 0.85s ease-out forwards; }
+        .pop.gold { color: var(--n3); } .pop.hype { color: var(--n1); font-size: 1.25rem; } .pop.cap { font-size: 0.62rem; opacity: 0.9; }
+        .pt { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: pt 0.7s ease-out forwards; }
+        .flash { position: absolute; inset: 0; z-index: 90; background: #fff; opacity: 0; pointer-events: none; }
+        .flash.go { animation: flash 0.25s ease-out; }
+        #toasts { position: absolute; z-index: 85; top: 54px; left: 12px; right: 12px; height: 28px; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        .toast { background: rgba(0,0,0,0.8); border: 1px solid var(--n3); border-radius: 999px; padding: 4px 14px; font-size: 0.76rem; font-weight: 800; animation: tin 0.25s ease-out; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .toast.lv { border-color: var(--n1); color: var(--n1); font-size: 0.95rem; }
+        .stage.lowfx .rainbow { animation: none; }
+        .stage.lowfx .machine.shaking, .stage.lowfx .capsule { animation: none; }
+
+        @keyframes rb { to { background-position: 300% 0; } }
+        @keyframes rb2 { to { background-position: 0 0, 300% 0; } }
+        @keyframes shake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, -2px); } 80% { transform: translate(3px, 2px); } }
+        @keyframes fall { to { transform: translateY(var(--fall, 700px)); } }
+        @keyframes hit { from { transform: scale(1); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+        @keyframes combo { 0% { transform: scale(0.4); opacity: 0; } 30% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+        @keyframes popup { 0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; } 20% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); } 100% { transform: translate(-50%, -220%) scale(1); opacity: 0; } }
+        @keyframes pt { to { transform: translate(var(--dx), var(--dy)) rotate(260deg); opacity: 0; } }
+        @keyframes flash { 0% { opacity: 0.55; } 100% { opacity: 0; } }
+        @keyframes tin { from { transform: translateY(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
+        @keyframes flip { from { transform: perspective(600px) rotateY(90deg) scale(0.7); opacity: 0; } to { transform: perspective(600px) rotateY(0) scale(1); opacity: 1; } }
+        @keyframes atk { 0% { top: 100%; opacity: 0; } 15% { opacity: 1; } 100% { top: 38%; opacity: 0; } }
+        @keyframes dead { 0% { transform: scale(1); } 40% { transform: scale(1.3) rotate(8deg); } 100% { transform: scale(0) rotate(540deg); opacity: 0; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .rainbow, .machine.shaking, .capsule { animation: none; }
+        }
+    </style>
+</head>
+<body>
+
+<main class="stage" id="stage">
+    <div id="fx"></div>
+    <div class="flash" id="flash"></div>
+    <div id="toasts"></div>
+
+    <header class="hud" id="hud" hidden>
+        <div class="lv"><b id="lvText">LV 1</b><div class="xpbar"><i id="xpFill"></i></div></div>
+        <div class="coins">💎 <span id="coins">0</span></div>
+        <button class="tool" id="sndBtn" type="button" aria-label="音のオン／オフ">🔇</button>
+        <button class="tool" id="fxBtn" type="button" aria-label="エフェクト控えめの切り替え">✨</button>
+    </header>
+
+    <section class="screen active" id="scr-title"></section>
+    <section class="screen" id="scr-rush"></section>
+    <section class="screen" id="scr-gacha"></section>
+    <section class="screen" id="scr-boss"></section>
+    <section class="screen" id="scr-result"></section>
+
+    <div class="overlay" id="overlay" hidden></div>
+</main>
+
+<script>
+    // =====================================================================
+    // 設定
+    // =====================================================================
+    const LOG_URL    = "resources/full_logs.txt";   // index.html と同じ階層の resources/ 内
+    const SURVEY_URL = "survey.html";               // アンケートページ
+    const SLIDE_MS   = 7000;                        // 1枚あたりの自動送り時間
+
+    // 同じ人が複数の名前で記録されている場合の名寄せ（「ログ上の名前」: 「まとめたい名前」）
+    // 例: "MiDUki2.0": "MiDUki [ˈmʲi̞d͡zɨ̥kʲi]"
+    const NAME_ALIASES = {
+    };
+
+    const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // =====================================================================
+    // 小さなDOMヘルパー（ログ由来の文字列は必ず textNode で入れる＝HTMLとして解釈させない）
+    // =====================================================================
+    function h(tag, props, ...kids) {
+        const el = document.createElement(tag);
+        if (props) {
+            for (const [k, v] of Object.entries(props)) {
+                if (v == null || v === false) continue;
+                if (k === "class") el.className = v;
+                else if (k === "vars") { for (const [vk, vv] of Object.entries(v)) el.style.setProperty(vk, vv); }
+                else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+                else el.setAttribute(k, v);
+            }
+        }
+        for (const kid of kids.flat()) {
+            if (kid == null || kid === false) continue;
+            el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+        }
+        return el;
+    }
+
+    // =====================================================================
+    // ログのパース
+    //   {commit_type} * {cut_num} * {component} * {creator_name} * {message} * {timemark} * {file_index_name}
+    // =====================================================================
+    function parseLogs(text) {
+        const rows = [];
+        let seq = 0;
+        for (const raw of text.replace(/^﻿/, "").split(/\r?\n/)) {
+            const line = raw.trim();
+            if (!line) continue;
+            let p = line.split(/\s\*\s/);
+            if (p.length < 7) p = line.split(/\s*\*\s*/);     // 区切りの前後に空白が無い形式にも対応
+            if (p.length < 7) continue;                       // 初期化コミットなど
+            const ts  = p[p.length - 2].trim();
+            const cut = parseInt(p[1], 10);
+            if (!/^\d{14}$/.test(ts) || !Number.isFinite(cut)) continue;
+
+            const y = +ts.slice(0, 4), mo = +ts.slice(4, 6), d = +ts.slice(6, 8);
+            const hh = +ts.slice(8, 10), mi = +ts.slice(10, 12), ss = +ts.slice(12, 14);
+            if (mo < 1 || mo > 12 || d < 1 || d > 31 || hh > 23 || mi > 59 || ss > 59) continue;
+
+            const who = p[3].trim();
+            rows.push({
+                type: p[0].trim().toUpperCase(),
+                cut,
+                comp: p[2].trim(),
+                who: NAME_ALIASES[who] || who,
+                ts,
+                // ログの時刻(JST)をそのまま「擬似UTC」として扱う（時差・夏時間の影響を受けない）
+                t: Date.UTC(y, mo - 1, d, hh, mi, ss) / 1000,
+                date: ts.slice(0, 4) + "-" + ts.slice(4, 6) + "-" + ts.slice(6, 8),
+                hour: hh,
+                dow: new Date(Date.UTC(y, mo - 1, d)).getUTCDay(),
+                seq: seq++
+            });
+        }
+        // ログは新しい順で出力されるため、先頭が新しければ反転してから時刻で（安定）ソートする
+        if (rows.length > 1 && rows[0].t > rows[rows.length - 1].t) rows.reverse();
+        rows.sort((a, b) => a.t - b.t);
+        return rows;
+    }
+
+    // =====================================================================
+    // 集計
+    // =====================================================================
+    function core(rows) {
+        const subs = rows.filter(r => r.type === "SUBMIT");
+        const hours = Array(24).fill(0), dows = Array(7).fill(0);
+        const byDay = new Map(), comps = new Map(), pairs = new Map();
+        subs.forEach(r => {
+            hours[r.hour]++;
+            dows[(r.dow + 6) % 7]++;                          // 月=0 … 日=6
+            byDay.set(r.date, (byDay.get(r.date) || 0) + 1);
+            comps.set(r.comp, (comps.get(r.comp) || 0) + 1);
+            const k = r.cut + "|" + r.comp;
+            pairs.set(k, (pairs.get(k) || 0) + 1);
+        });
+        let bestDay = null;
+        byDay.forEach((n, date) => { if (!bestDay || n > bestDay.n) bestDay = { date, n }; });
+        let retake = null;
+        pairs.forEach((n, k) => {
+            if (n >= 2 && (!retake || n > retake.n)) {
+                const i = k.indexOf("|");
+                retake = { cut: +k.slice(0, i), comp: k.slice(i + 1), n };
+            }
+        });
+        return {
+            subs, total: subs.length, hours, dows, byDay, bestDay, retake,
+            comps: [...comps.entries()].sort((a, b) => b[1] - a[1]),
+            approve: rows.filter(r => r.type === "APPROVE").length,
+            decline: rows.filter(r => r.type === "DECLINE").length,
+            cuts: new Set(subs.map(r => r.cut)).size,
+            redo: subs.length - pairs.size,
+            first: subs[0], last: subs[subs.length - 1]
+        };
+    }
+
+    function reviewTimes(rows) {
+        const pend = new Map(), out = [];
+        rows.forEach(r => {
+            const k = r.cut + "|" + r.comp;
+            if (r.type === "SUBMIT" || r.type === "REPOINT" || r.type === "ABSORPTION") pend.set(k, r);
+            else if (r.type === "APPROVE" || r.type === "DECLINE") {
+                const s = pend.get(k);
+                if (s) { out.push({ sec: r.t - s.t, cut: r.cut, comp: r.comp }); pend.delete(k); }
+            }
+        });
+        return out;
+    }
+
+    function analyze(rows) {
+        const S = core(rows);
+        const ppl = new Map();
+        S.subs.forEach(r => ppl.set(r.who, (ppl.get(r.who) || 0) + 1));
+        S.people  = [...ppl.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+        S.members = S.people.length;
+        S.allCuts = new Set(rows.map(r => r.cut)).size;
+        S.rows    = rows;
+        S.reuse   = rows.filter(r => r.type === "REPOINT" || r.type === "ABSORPTION").length;
+        S.repoint = rows.filter(r => r.type === "REPOINT").length;
+        S.absorb  = rows.filter(r => r.type === "ABSORPTION").length;
+        S.reviews = reviewTimes(rows);
+        S.activeDays = S.byDay.size;
+        return S;
+    }
+
+    // =====================================================================
+    // 表示用の整形
+    // =====================================================================
+    const num = n => Math.round(n).toLocaleString("ja-JP");
+    const fmtDate = d => { const [, m, dd] = d.split("-"); return `${+m}月${+dd}日`; };
+    const fmtDateTime = r => `${fmtDate(r.date)} ${r.ts.slice(8, 10)}:${r.ts.slice(10, 12)}`;
+    function fmtDuration(sec) {
+        sec = Math.max(0, Math.round(sec));
+        if (sec < 60) return `${sec}秒`;
+        if (sec < 3600) return `${Math.round(sec / 60)}分`;
+        if (sec < 86400) { const hh = Math.floor(sec / 3600), mm = Math.round((sec % 3600) / 60); return mm ? `${hh}時間${mm}分` : `${hh}時間`; }
+        const dd = Math.floor(sec / 86400), hh = Math.round((sec % 86400) / 3600);
+        return hh ? `${dd}日${hh}時間` : `${dd}日`;
+    }
+    const median = arr => { const s = [...arr].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+    const PERSONAS = [
+        { name: "朝型", icon: "🌅", hours: [5, 6, 7, 8, 9, 10] },
+        { name: "昼型", icon: "☀️", hours: [11, 12, 13, 14, 15, 16] },
+        { name: "夜型", icon: "🌙", hours: [17, 18, 19, 20, 21, 22] },
+        { name: "深夜型", icon: "🦉", hours: [23, 0, 1, 2, 3, 4] }
+    ];
+    function persona(hours) {
+        const total = hours.reduce((a, b) => a + b, 0) || 1;
+        let best = null;
+        PERSONAS.forEach(p => {
+            const n = p.hours.reduce((a, hr) => a + hours[hr], 0);
+            if (!best || n > best.n) best = { ...p, n, share: n / total };
+        });
+        return best;
+    }
+    const peakIndex = arr => arr.indexOf(Math.max(...arr));
+
+    // 期間に応じて日／週／月に束ねる
+    function timeline(S) {
+        const di = d => { const [y, m, dd] = d.split("-").map(Number); return Math.round(Date.UTC(y, m - 1, dd) / 864e5); };
+        const a = di(S.first.date), b = di(S.last.date), span = b - a + 1;
+        const bins = [];
+        if (span <= 31) {
+            for (let i = 0; i < span; i++) { const dt = new Date((a + i) * 864e5); bins.push({ label: `${dt.getUTCMonth() + 1}/${dt.getUTCDate()}`, n: 0 }); }
+            S.byDay.forEach((n, d) => { bins[di(d) - a].n += n; });
+            return { bins, unit: "日" };
+        }
+        if (span <= 200) {
+            const cnt = Math.ceil(span / 7);
+            for (let i = 0; i < cnt; i++) { const dt = new Date((a + i * 7) * 864e5); bins.push({ label: `${dt.getUTCMonth() + 1}/${dt.getUTCDate()}〜`, n: 0 }); }
+            S.byDay.forEach((n, d) => { bins[Math.floor((di(d) - a) / 7)].n += n; });
+            return { bins, unit: "週" };
+        }
+        const m0 = new Date(a * 864e5), m1 = new Date(b * 864e5);
+        const k0 = m0.getUTCFullYear() * 12 + m0.getUTCMonth(), k1 = m1.getUTCFullYear() * 12 + m1.getUTCMonth();
+        for (let k = k0; k <= k1; k++) bins.push({ label: `${(k % 12) + 1}月`, n: 0 });
+        S.byDay.forEach((n, d) => { const [y, m] = d.split("-").map(Number); bins[y * 12 + (m - 1) - k0].n += n; });
+        return { bins, unit: "月" };
+    }
+
+    // ---- 日付ヘルパー（日番号 = 1970-01-01 からの日数。時差の影響を受けない） ----
+    const WD = ["月", "火", "水", "木", "金", "土", "日"];
+    const dayIdx  = d => { const [y, m, dd] = d.split("-").map(Number); return Math.round(Date.UTC(y, m - 1, dd) / 864e5); };
+    const idxDate = i => { const dt = new Date(i * 864e5); const p = n => String(n).padStart(2, "0"); return `${dt.getUTCFullYear()}-${p(dt.getUTCMonth() + 1)}-${p(dt.getUTCDate())}`; };
+    const fmtIdx   = i => fmtDate(idxDate(i));
+    const fmtRange = (a, b) => a === b ? fmtIdx(a) : `${fmtIdx(a)}〜${fmtIdx(b)}`;
+
+    // 連続記録・いちばん長いお休み・いちばん忙しい7日間（byDay: "YYYY-MM-DD" → 件数）
+    function dayStats(byDay) {
+        const cnt = new Map();
+        byDay.forEach((n, d) => cnt.set(dayIdx(d), n));
+        const idxs = [...cnt.keys()].sort((a, b) => a - b);
+        let streak = { len: 0 }, run = { from: idxs[0], len: 1 }, brk = null;
+        for (let i = 0; i < idxs.length; i++) {
+            if (i > 0) {
+                const gap = idxs[i] - idxs[i - 1] - 1;                       // 間に提出の無かった日数
+                if (gap === 0) run.len++;
+                else {
+                    run = { from: idxs[i], len: 1 };
+                    if (!brk || gap > brk.len) brk = { len: gap, from: idxs[i - 1] + 1, to: idxs[i] - 1 };
+                }
+            }
+            if (run.len > streak.len) streak = { len: run.len, from: run.from, to: run.from + run.len - 1 };
+        }
+        let week = { n: 0 };
+        idxs.forEach(s => {                                                  // 提出のあった日を起点とする7日間の合計
+            let n = 0;
+            for (let k = 0; k < 7; k++) n += cnt.get(s + k) || 0;
+            if (n > week.n) week = { n, from: s, to: s + 6 };
+        });
+        return { idxs, streak, brk, week, active: idxs.length };
+    }
+
+    // 日ごとの累計（C.cum[i] = 開始日から i 日目までの累計提出数）
+    function cumulative(S) {
+        const a = dayIdx(S.first.date), b = dayIdx(S.last.date), span = b - a + 1;
+        const per = new Array(span).fill(0);
+        S.byDay.forEach((n, d) => { per[dayIdx(d) - a] += n; });
+        let s = 0;
+        const cum = per.map(n => (s += n));
+        return { a, b, span, cum, reach: m => a + cum.findIndex(c => c >= m) };   // reach: m件目に到達した日番号
+    }
+
+
+    // 文字コードを自動判定して文字列にする
+    // （Windows の PowerShell で `> full_logs.txt` と保存すると UTF-16 になることがあるため）
+    function decodeLog(buf) {
+        const u8 = new Uint8Array(buf);
+        if (u8[0] === 0xFF && u8[1] === 0xFE) return new TextDecoder("utf-16le").decode(buf);
+        if (u8[0] === 0xFE && u8[1] === 0xFF) return new TextDecoder("utf-16be").decode(buf);
+        try { return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/^﻿/, ""); }
+        catch (e) {
+            try { return new TextDecoder("shift_jis").decode(buf); }          // メモ帳(旧)などで保存された日本語
+            catch (e2) { return new TextDecoder("utf-8").decode(buf); }
+        }
+    }
+
+
+    // =====================================================================
+    // ここから ドパガキMODE 固有のコード（上は review.html と共通の集計コード）
+    // =====================================================================
+    const REVIEW_URL = "review.html";
+    const $ = id => document.getElementById(id);
+    const stageEl = $("stage"), fxLayer = $("fx");
+    const rnd = n => Math.floor(Math.random() * n);
+    const pick = a => a[rnd(a.length)];
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const HYPE = ["えぐい", "つよ", "神ログ", "ヤバすぎ", "限界突破", "ぬる〜", "沼る", "尊い", "天才か？", "ぬるぬる", "ガチ勢", "止まらん"];
+
+    let STATS = null;
+    let PICKED = [];                                   // 選んだ名前（複数OK）
+    const SETTINGS = { sound: false, lowFx: REDUCED };  // 音・エフェクト控えめ
+    const G = {};
+    function resetGame() {
+        Object.assign(G, {
+            xp: 0, level: 1, coins: 0, score: 0, combo: 0, maxCombo: 0, taps: 0, rushTaps: 0, caught: 0, missed: 0, spawned: 0, gold: 0,
+            owned: new Set(), fresh: new Set(), unlocked: new Map(), bossDone: false, bossSkipped: false, rank: "-", maxFever: 1, cards: []
+        });
+    }
+    resetGame();
+
+    // =====================================================================
+    // 効果音（Web Audio。既定はオフ。スタート時に選ぶ）
+    // =====================================================================
+    const Snd = {
+        ctx: null,
+        init() {
+            try {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === "suspended") this.ctx.resume();
+            } catch (e) { this.ctx = null; }
+        },
+        tone(f, d = 0.08, type = "square", v = 0.035, to = null, delay = 0) {
+            if (!SETTINGS.sound || !this.ctx) return;
+            try {
+                const t = this.ctx.currentTime + delay, o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                o.type = type; o.frequency.setValueAtTime(f, t);
+                if (to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+                g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+                o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + d + 0.02);
+            } catch (e) { /* 鳴らせなくても進行は止めない */ }
+        },
+        tap(c) { this.tone(520 + Math.min(c, 30) * 18, 0.06); },
+        gold() { [880, 1175, 1568].forEach((f, i) => this.tone(f, 0.1, "triangle", 0.045, null, i * 0.06)); },
+        miss() { this.tone(140, 0.14, "sawtooth", 0.035, 70); },
+        gacha() { this.tone(200, 0.75, "sawtooth", 0.03, 900); },
+        rare(r) { const n = { N: 0, R: 2, SR: 3, SSR: 5, UR: 7 }[r] || 0; for (let i = 0; i < n + 2; i++) this.tone(523 * Math.pow(1.122, i * 2), 0.14, "triangle", 0.045, null, i * 0.07); },
+        hit() { this.tone(220, 0.08, "square", 0.045, 80); },
+        win() { [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.22, "triangle", 0.055, null, i * 0.1)); },
+        level() { [659, 880, 1175].forEach((f, i) => this.tone(f, 0.12, "triangle", 0.05, null, i * 0.07)); }
+    };
+    const buzz = ms => { if (!SETTINGS.lowFx && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) { /* 無視 */ } };
+
+    // =====================================================================
+    // エフェクト（エフェクト控えめのときは、揺れ・フラッシュを出さず、粒も減らす）
+    // =====================================================================
+    function relXY(cx, cy) { const r = stageEl.getBoundingClientRect(); return [cx - r.left, cy - r.top]; }
+    function pop(text, x, y, cls = "") {
+        if (fxLayer.children.length > 70) return;
+        const el = h("div", { class: "pop " + cls, style: `left:${Math.round(x)}px;top:${Math.round(y)}px` }, text);
+        fxLayer.append(el);
+        el.addEventListener("animationend", () => el.remove());
+    }
+    function burst(x, y, n = 10, colors = ["#ff2d95", "#ffeb3b", "#00e5ff", "#76ff03"]) {
+        const cnt = SETTINGS.lowFx ? Math.ceil(n / 3) : n;
+        for (let i = 0; i < cnt && fxLayer.children.length < 90; i++) {
+            const a = Math.random() * Math.PI * 2, d = 30 + Math.random() * 60;
+            const el = h("i", { class: "pt", style: `left:${Math.round(x)}px;top:${Math.round(y)}px;background:${colors[i % colors.length]};--dx:${Math.round(Math.cos(a) * d)}px;--dy:${Math.round(Math.sin(a) * d)}px` });
+            fxLayer.append(el);
+            el.addEventListener("animationend", () => el.remove());
+        }
+    }
+    function shake() {
+        if (SETTINGS.lowFx) return;
+        stageEl.classList.remove("shake"); void stageEl.offsetWidth; stageEl.classList.add("shake");
+        setTimeout(() => stageEl.classList.remove("shake"), 320);
+    }
+    function flash() {
+        if (SETTINGS.lowFx) return;
+        const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+    }
+    // 通知は専用の帯に1つずつ順番に出す（重なって読めなくならないように）。実績は結果画面にも一覧で残る
+    const toastQueue = []; let toastBusy = false;
+    function toast(text, cls = "") { toastQueue.push([text, cls]); if (!toastBusy) nextToast(); }
+    function nextToast() {
+        const t = toastQueue.shift(), box = $("toasts");
+        if (!t) { toastBusy = false; return; }
+        toastBusy = true;
+        box.replaceChildren(h("div", { class: "toast " + t[1] }, t[0]));
+        setTimeout(() => { box.replaceChildren(); setTimeout(nextToast, 100); }, toastQueue.length > 2 ? 800 : 1700);
+    }
+    function syncTools() {
+        $("sndBtn").textContent = SETTINGS.sound ? "🔊" : "🔇";
+        $("sndBtn").classList.toggle("off", !SETTINGS.sound);
+        $("fxBtn").classList.toggle("off", SETTINGS.lowFx);
+        $("fxBtn").title = SETTINGS.lowFx ? "エフェクト控えめ：オン" : "エフェクト控えめ：オフ";
+        stageEl.classList.toggle("lowfx", SETTINGS.lowFx);
+    }
+    $("sndBtn").addEventListener("click", () => { SETTINGS.sound = !SETTINGS.sound; if (SETTINGS.sound) Snd.init(); syncTools(); });
+    $("fxBtn").addEventListener("click", () => { SETTINGS.lowFx = !SETTINGS.lowFx; syncTools(); toast(SETTINGS.lowFx ? "✨ エフェクト控えめ ON" : "✨ エフェクト控えめ OFF"); });
+
+    // =====================================================================
+    // XP・レベル・コイン・実績
+    // =====================================================================
+    const lvStart = lv => 25 * (lv - 1) * (lv - 1);
+    function renderHud() {
+        $("lvText").textContent = "LV " + G.level;
+        $("coins").textContent = num(G.coins);
+        const a = lvStart(G.level), b = lvStart(G.level + 1);
+        $("xpFill").style.width = clamp((G.xp - a) / (b - a) * 100, 0, 100) + "%";
+    }
+    function addXp(n) {
+        G.xp += n;
+        const lv = 1 + Math.floor(Math.sqrt(G.xp / 25));
+        if (lv > G.level) {
+            G.level = lv;
+            toast(`⬆ LEVEL UP!  LV ${lv}`, "lv"); Snd.level(); flash();
+            if (lv >= 5) unlock("lv5", "LV5到達");
+        }
+        renderHud();
+    }
+    function addCoins(n) { G.coins += n; renderHud(); }
+    function unlock(id, label) {
+        if (G.unlocked.has(id)) return;
+        G.unlocked.set(id, label);
+        toast("🏆 実績解除：" + label);
+        G.xp += 30; renderHud();
+    }
+    function showScreen(id) {
+        document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+        $("hud").hidden = id === "scr-title";
+        closeOverlay();
+    }
+    function showOverlay(...nodes) { const o = $("overlay"); o.replaceChildren(...nodes); o.hidden = false; }
+    function closeOverlay() { const o = $("overlay"); o.hidden = true; o.replaceChildren(); }
+
+    // =====================================================================
+    // タイトル・読み込み
+    // =====================================================================
+    function namePicker() {
+        const counts = new Map(STATS.people);
+        const summary = h("div", { class: "picked", "aria-live": "polite" });
+        const refresh = () => {
+            summary.textContent = PICKED.length
+                ? `選択中 ${PICKED.length} 件：${PICKED.join("、")}（計 ${num(PICKED.reduce((s, nm) => s + counts.get(nm), 0))}件）`
+                : "選択なし → 全体のデータだけで遊びます";
+        };
+        const items = STATS.people.map(([name, n]) =>
+            h("label", { class: "chipcheck" },
+                h("input", {
+                    type: "checkbox", value: name, checked: PICKED.includes(name) ? "checked" : null,
+                    onchange: e => {
+                        const i = PICKED.indexOf(name);
+                        if (e.target.checked && i < 0) PICKED.push(name);
+                        if (!e.target.checked && i >= 0) PICKED.splice(i, 1);
+                        refresh();
+                    }
+                }),
+                h("span", null, `${name}（${num(n)}件）`)));
+        const filter = h("input", {
+            type: "search", placeholder: "名前をしぼりこむ", "aria-label": "名前を絞り込む", autocomplete: "off",
+            oninput: e => { const q = e.target.value.trim().toLowerCase(); items.forEach(l => { l.hidden = !!q && !l.textContent.toLowerCase().includes(q); }); }
+        });
+        refresh();
+        return h("div", { class: "namepick" },
+            h("div", { class: "np-title" }, "🎧 自分の名前を選ぶと「あなた専用カード」が出ます（複数OK・任意）"),
+            STATS.people.length > 8 ? filter : null,
+            h("div", { class: "namelist", role: "group", "aria-label": "名前の一覧" }, items),
+            summary,
+            h("p", { class: "note" }, "複数の名前を使っていた人は全部選ぶとまとめて集計されます。選んだ名前はこのページの中だけで使われ、アンケートには送信されません。"));
+    }
+
+    function renderTitle(state, msg, details = []) {
+        const scr = $("scr-title");
+        const head = [
+            h("div", { class: "eyebrow" }, "MITEIKEN ARCADE 2026"),
+            h("h1", { class: "title-h1 rainbow" }, "ドパガキ", h("br"), "MODE"),
+            h("p", { class: "sub" }, "Shell Arc 2026 ふりかえりゲーム 〜提出ログでガチャって、ボスを倒せ〜"),
+            h("div", { class: "warn" }, "⚠ 刺激が強めのモードです。集中力が3秒しかもたない方も大歓迎。目が疲れたり、光や揺れが苦手な場合は「エフェクト控えめ」を選ぶか、通常のレビューをどうぞ。")
+        ];
+        if (state === "loading") { scr.replaceChildren(...head, h("div", { class: "status" }, "制作ログを読み込み中…")); return; }
+        if (state === "error") {
+            scr.replaceChildren(...head,
+                h("div", { class: "status err" }, msg, details.map(d => h("div", { class: "detail" }, d))),
+                h("label", { class: "btn pink file-label" }, "📂 ログファイルを選んで読み込む",
+                    h("input", { type: "file", accept: ".txt,text/plain", onchange: e => { const f = e.target.files[0]; if (f) f.arrayBuffer().then(handleBuffer); } })),
+                h("div", { class: "links" }, h("a", { class: "link", href: REVIEW_URL }, "通常のレビューを見る"), h("a", { class: "link", href: SURVEY_URL }, "スキップしてアンケートへ →")));
+            return;
+        }
+        const lowBox = h("input", { type: "checkbox", id: "lowfx", checked: SETTINGS.lowFx ? "checked" : null });
+        scr.replaceChildren(...head,
+            h("div", { class: "status" }, `${num(STATS.rows.length)} 件のログを読み込みました。このログがそのままゲームの素材になります。`),
+            namePicker(),
+            h("label", { class: "chipcheck", style: "align-self:flex-start" }, lowBox, h("span", null, "✨ エフェクト控えめ（光・揺れを減らす）")),
+            h("div", { class: "btn-row" },
+                h("button", { class: "btn pink", type: "button", onclick: () => begin(true) }, "🔊 音ありで遊ぶ"),
+                h("button", { class: "btn cyan", type: "button", onclick: () => begin(false) }, "🔇 音なしで遊ぶ")),
+            h("div", { class: "links" }, h("a", { class: "link", href: REVIEW_URL }, "通常のレビューを見る"), h("a", { class: "link", href: SURVEY_URL }, "スキップしてアンケートへ →")));
+    }
+
+    function begin(sound) {
+        SETTINGS.sound = sound;
+        SETTINGS.lowFx = !!($("lowfx") && $("lowfx").checked);
+        if (sound) Snd.init();
+        resetGame();
+        syncTools(); renderHud();
+        Rush.start();
+    }
+
+    // =====================================================================
+    // ステージ1: ログ・ラッシュ（実際の提出ログが降ってくる。日付は年初→年末へ流れる）
+    // =====================================================================
+    const Rush = (() => {
+        const DURATION = 30000;
+        let field, comboEl, dateEl, timeEl, tlFill;
+        let active = false, running = false, spawnTimer = null, tickTimer = null, endTimer = null, readyTimers = [];
+        let k = 0, sample = [], t0 = 0;
+
+        function build() {
+            dateEl = h("span", { class: "date" }, "📅 ----/--/--");
+            timeEl = h("span", null, "⏱ 30");
+            tlFill = h("i");
+            comboEl = h("div", { class: "combo-label" });
+            field = h("div", { class: "field", role: "application", "aria-label": "流れてくる提出ログをタップして集めるエリア" }, comboEl);
+            $("scr-rush").replaceChildren(
+                h("div", { class: "rush-top" }, dateEl, h("span", null, "提出ログをタップ！"), timeEl),
+                h("div", { class: "tl" }, tlFill),
+                field,
+                h("div", { class: "foot" },
+                    h("button", { class: "btn ghost small", type: "button", onclick: skip }, "⏩ スキップ（💎60もらう）"),
+                    h("a", { class: "link", href: SURVEY_URL }, "アンケートへ")));
+            field.addEventListener("pointerdown", onDown);
+        }
+
+        function start() {
+            stop();
+            G.score = 0; G.combo = 0; G.caught = 0; G.missed = 0; G.spawned = 0; G.gold = 0; G.rushTaps = 0;
+            build(); showScreen("scr-rush");
+            // 年間のログを時系列のまま等間隔に間引いて、30秒で「年初→年末」が流れるようにする
+            const rows = STATS.rows, N = 80, step = rows.length / N;
+            sample = Array.from({ length: N }, (_, i) => rows[Math.min(rows.length - 1, Math.floor(i * step + Math.random() * step))]);
+            k = 0; active = true;
+            const cnt = h("div", { class: "count rainbow" }, "3");
+            const ready = h("div", { class: "ready" },
+                h("div", { class: "h2 rainbow" }, "LOG RUSH"),
+                h("p", null, "流れてくる提出ログをタップして集めろ！"),
+                h("p", { class: "note" }, "🟦 提出 +10 ／ 🟨 承認 +30 ／ 🌈 使い回し +50", h("br"), "連続ヒットでコンボ倍率UP・取りこぼすとリセット"),
+                cnt);
+            field.append(ready);
+            [["2", 800], ["1", 1600], ["GO!", 2400]].forEach(([t, ms]) => readyTimers.push(setTimeout(() => { cnt.textContent = t; Snd.tone(t === "GO!" ? 880 : 440, 0.12, "square", 0.04); }, ms)));
+            readyTimers.push(setTimeout(() => { ready.remove(); run(); }, 3000));
+        }
+
+        function run() {
+            field.style.setProperty("--fall", (field.clientHeight + 100) + "px");
+            t0 = performance.now(); running = true;
+            spawn();
+            tickTimer = setInterval(tick, 100);
+        }
+
+        function tick() {
+            const el = performance.now() - t0, rem = Math.max(0, DURATION - el);
+            timeEl.textContent = "⏱ " + Math.ceil(rem / 1000);
+            tlFill.style.width = Math.min(100, el / DURATION * 100) + "%";
+            if (rem <= 0) finish();
+        }
+
+        function spawn() {
+            if (!running) return;
+            const prog = Math.min(1, (performance.now() - t0) / DURATION);
+            const row = sample[Math.min(k++, sample.length - 1)];
+            G.spawned++;
+            const x = Math.round(Math.random() * Math.max(1, field.clientWidth - 116));
+            const dur = (2.7 - prog * 1.1).toFixed(2);
+            const cls = row.type === "APPROVE" ? "gold" : (row.type === "REPOINT" || row.type === "ABSORPTION") ? "rain" : "";
+            const el = h("div", { class: "log " + cls, style: `left:${x}px;--dur:${dur}s` },
+                h("b", null, row.type), h("span", null, `cut${row.cut} ${row.comp}`), h("em", null, row.who));
+            el._row = row;
+            el.addEventListener("animationend", ev => {
+                if (ev.animationName === "fall" && !el._done) miss(el);
+                el.remove();
+            });
+            field.append(el);
+            dateEl.textContent = "📅 " + row.date.replace(/-/g, "/");
+            spawnTimer = setTimeout(spawn, 520 - prog * 210);
+        }
+
+        function onDown(e) {
+            if (!active || !running && !field.querySelector(".log")) return;
+            const [x, y] = relXY(e.clientX, e.clientY);
+            G.taps++; G.rushTaps++;
+            const el = e.target.closest(".log");
+            if (el && field.contains(el)) collect(el, x, y);
+            else { burst(x, y, 3, ["#ffffff"]); Snd.tone(300, 0.03, "square", 0.012); }
+            if (G.rushTaps === 1) unlock("tap1", "はじめの一歩");
+        }
+
+        function collect(el, x, y) {
+            if (el._done) return;
+            el._done = true;
+            const fr = field.getBoundingClientRect(), er = el.getBoundingClientRect();
+            el.style.top = (er.top - fr.top - field.clientTop) + "px";           // 落下の途中位置で固定してから消す
+            el.style.animation = "hit 0.2s forwards";
+            el.classList.add("hit");
+            const r = el._row, gold = r.type === "APPROVE", rain = r.type === "REPOINT" || r.type === "ABSORPTION";
+            G.combo += (gold || rain) ? 2 : 1;
+            G.maxCombo = Math.max(G.maxCombo, G.combo);
+            const mult = Math.min(10, 1 + Math.floor(G.combo / 5));
+            const gain = (rain ? 50 : gold ? 30 : 10) * mult;
+            G.score += gain; G.caught++; if (gold || rain) G.gold++;
+            addXp(Math.ceil(gain / 6));
+            (gold || rain) ? Snd.gold() : Snd.tap(G.combo);
+            pop(`+${num(gain)}`, x, y - 10, (gold || rain) ? "gold" : "");
+            pop(`cut${r.cut}`, x, y + 14, "cap");
+            burst(x, y, (gold || rain) ? 14 : 6, gold ? ["#ffd600", "#ff9100"] : undefined);
+            buzz(8);
+            if (G.combo >= 5 && Math.floor((G.combo - 1) / 5) !== Math.floor(G.combo / 5) || (G.combo >= 5 && G.combo % 5 === 0)) showCombo(mult);
+            if (G.combo >= 10 && G.combo % 10 === 0) { pop(pick(HYPE), x, y - 40, "hype"); shake(); }
+            if (G.combo >= 10) unlock("combo10", "COMBO 10");
+            if (G.combo >= 25) unlock("combo25", "COMBO 25");
+            if (G.combo >= 50) unlock("combo50", "COMBO 50（ドパガキの素質）");
+            if (G.gold >= 5) unlock("gold5", "承認ハンター");
+        }
+
+        function showCombo(mult) {
+            comboEl.textContent = `${G.combo} COMBO  x${mult}`;
+            comboEl.classList.remove("on"); void comboEl.offsetWidth; comboEl.classList.add("on");
+        }
+
+        function miss(el) {
+            G.combo = 0; G.missed++;
+            Snd.miss();
+            const er = el.getBoundingClientRect(), fr = field.getBoundingClientRect(), [x, y] = relXY(er.left + er.width / 2, fr.bottom - 18);
+            pop("MISS", x, y, "cap");
+        }
+
+        function finish() {
+            running = false;
+            clearTimeout(spawnTimer); clearInterval(tickTimer);
+            endTimer = setTimeout(showResult, 2800);          // 画面内に残っているログが落ち切るのを待つ
+        }
+
+        function showResult() {
+            active = false;
+            field.querySelectorAll(".log").forEach(l => l.remove());
+            const rate = G.spawned ? G.caught / G.spawned : 0;
+            G.rank = rate >= 0.9 ? "S" : rate >= 0.75 ? "A" : rate >= 0.55 ? "B" : "C";
+            const say = { S: "ぬるたろうも震えるぬる！", A: "なかなかやるぬる〜！", B: "まだ伸びしろがあるぬる。", C: "ぬるい…ぬるすぎるぬる…" }[G.rank];
+            const earned = 20 + Math.round(G.score / 8);
+            addCoins(earned);
+            if (G.missed === 0 && G.spawned > 0) unlock("perfect", "取りこぼしゼロ");
+            Snd.win();
+            showOverlay(
+                h("div", { class: "h2 rainbow" }, "TIME UP!"),
+                h("div", { class: "result-card" },
+                    h("div", { class: "rank rainbow" }, "RANK " + G.rank),
+                    h("div", { class: "dopa" }, say),
+                    h("p", { class: "note" }, `年間 ${num(STATS.rows.length)} 件のログのうち ${G.spawned} 件が流れました（${fmtDate(STATS.first.date)} → ${fmtDate(STATS.last.date)}）`)),
+                h("div", { class: "stats", style: "width:100%;max-width:340px" },
+                    h("div", { class: "st" }, h("div", { class: "k" }, "回収"), h("div", { class: "v" }, `${G.caught}/${G.spawned}`)),
+                    h("div", { class: "st" }, h("div", { class: "k" }, "最大コンボ"), h("div", { class: "v" }, num(G.maxCombo))),
+                    h("div", { class: "st" }, h("div", { class: "k" }, "スコア"), h("div", { class: "v" }, num(G.score)))),
+                h("p", { class: "sub" }, `💎 +${num(earned)} ゲット！`),
+                h("button", { class: "btn gold", type: "button", onclick: () => Gacha.start() }, "🎰 ガチャへ"));
+        }
+
+        function stop() {
+            running = false; active = false;
+            clearTimeout(spawnTimer); clearInterval(tickTimer); clearTimeout(endTimer);
+            readyTimers.forEach(clearTimeout); readyTimers = [];
+        }
+
+        function skip() { stop(); addCoins(60); toast("💎 +60（スキップボーナス）"); Gacha.start(); }
+
+        return { start };
+    })();
+
+    // =====================================================================
+    // ステージ2: ログガチャ（出てくるカード＝実際の集計結果。図鑑に集まる）
+    // =====================================================================
+    function topLabel(tops) { return tops.length === 1 ? tops[0] : tops.slice(0, 2).join(" / ") + (tops.length > 2 ? ` ほか${tops.length - 2}名` : ""); }
+
+    function buildCards(S, names) {
+        const cards = [];
+        const add = (id, rar, icon, title, big, sub, you = false) => cards.push({ id, rar, icon, title, big: String(big), sub: String(sub || ""), you });
+        const dst = dayStats(S.byDay);
+        const a = dayIdx(S.first.date), b = dayIdx(S.last.date), span = b - a + 1;
+
+        add("total", "N", "📦", "総提出数", `${num(S.total)}件`, `${num(S.allCuts)}カット ・ ${num(S.members)}人で作りました`);
+        add("days", "N", "📅", "提出があった日", `${num(dst.active)}日`, `期間${num(span)}日のうち ${Math.round(dst.active / span * 100)}%`);
+        add("first", "R", "🌱", "はじまりの一件", fmtDateTime(S.first), `${S.first.who} さん ・ カット${S.first.cut}「${S.first.comp}」`);
+        add("busiest", "R", "🔥", "いちばん忙しかった日", fmtDate(S.bestDay.date), `この日だけで ${num(S.bestDay.n)} 件`);
+        const per = persona(S.hours), ph = peakIndex(S.hours);
+        add("persona", "R", per.icon, "チームの時間帯", `${per.name}チーム`, `ピークは ${ph}時台（${num(S.hours[ph])}件）`);
+        const wp = peakIndex(S.dows), wk = Math.round((S.dows[5] + S.dows[6]) / (S.total || 1) * 100);
+        add("weekday", "R", "📆", "いちばん多い曜日", `${WD[wp]}曜日`, `土日の提出は全体の ${wk}%`);
+
+        // 工程ごとの王（提出の多い上位3工程）
+        const byComp = new Map();
+        S.subs.forEach(r => { let m = byComp.get(r.comp); if (!m) byComp.set(r.comp, m = new Map()); m.set(r.who, (m.get(r.who) || 0) + 1); });
+        S.comps.slice(0, 3).forEach(([comp, total]) => {
+            const m = byComp.get(comp), best = Math.max(...m.values());
+            const tops = [...m.entries()].filter(([, n]) => n === best).map(([w]) => w);
+            add("king:" + comp, "R", "🏅", `${comp} の王`, topLabel(tops), `${num(best)}件（その工程の ${Math.round(best / total * 100)}%）`);
+        });
+
+        add("top", "SR", "👑", "提出数トップ", S.people[0][0], `${num(S.people[0][1])} 件`);
+        if (dst.streak.len >= 2) add("streak", "SR", "🔗", "連続記録", `${num(dst.streak.len)}日連続`, `${fmtRange(dst.streak.from, dst.streak.to)}、毎日提出がありました`);
+        if (S.reviews.length) {
+            const mn = S.reviews.reduce((x, y) => y.sec < x.sec ? y : x), mx = S.reviews.reduce((x, y) => y.sec > x.sec ? y : x);
+            add("fast", "SR", "⚡", "最速のチェック", fmtDuration(mn.sec), `カット${mn.cut}「${mn.comp}」（中央値は ${fmtDuration(median(S.reviews.map(x => x.sec)))}）`);
+            add("slow", "UR", "🐢", "最長のチェック待ち", fmtDuration(mx.sec), `カット${mx.cut}「${mx.comp}」`);
+        }
+        if (S.retake) add("retake", "SR", "🔁", "いちばん粘ったカット", `${S.retake.n}回提出`, `カット${S.retake.cut}「${S.retake.comp}」`);
+        if (S.reuse > 0) add("reuse", "SR", "♻️", "素材の使い回し", `${num(S.reuse)}回`, `参照の付け替え ${num(S.repoint)} ・ 取り込み ${num(S.absorb)}`);
+
+        if (span >= 3) {
+            const C = cumulative(S);
+            add("half", "SSR", "🏁", "折り返し地点", fmtIdx(C.reach(S.total / 2)), `総提出の半分（${num(Math.ceil(S.total / 2))}件）に到達した日`);
+            if (span >= 10) {
+                const tail = Math.max(1, Math.floor(span * 0.1 + 0.5)), before = C.span - tail > 0 ? C.cum[C.span - tail - 1] : 0;
+                add("tail", "UR", "🚀", "ラストスパート", `全体の${Math.round((S.total - before) / S.total * 100)}%`, `最後の ${tail} 日間（期間の10%）で提出されました`);
+            }
+        }
+        if (S.approve > 0 && S.total > 0) {
+            const rate = Math.min(1, S.approve / S.total);
+            add("rate", "SSR", "✅", "チェックの通過率", `${Math.round(rate * 100)}%`, `承認 ${num(S.approve)} ÷ 総提出 ${num(S.total)}`);
+        }
+        if (dst.active >= 2) {
+            add("week7", "SSR", "🏃", "最も忙しかった7日間", `${num(dst.week.n)}件`, fmtRange(dst.week.from, dst.week.to));
+            add("break", "SSR", "🛌", "いちばん長いお休み", dst.brk ? `${num(dst.brk.len)}日` : "なし！", dst.brk ? fmtRange(dst.brk.from, dst.brk.to) : "毎日、誰かが提出していました");
+        }
+        // 夜明け前（0:00〜5:59）でいちばん遅い時刻の提出
+        const dawn = S.subs.filter(r => r.hour < 6).reduce((best, r) => {
+            const sec = r.hour * 3600 + (+r.ts.slice(10, 12)) * 60 + (+r.ts.slice(12, 14));
+            return (!best || sec > best.sec) ? { sec, r } : best;
+        }, null);
+        if (dawn) add("dawn", "UR", "🌅", "夜明け前の一件", `${r2(dawn.r.ts.slice(8, 10))}:${dawn.r.ts.slice(10, 12)}`, `${fmtDate(dawn.r.date)} ${dawn.r.who} さん ・ カット${dawn.r.cut}「${dawn.r.comp}」`);
+
+        // あなた専用カード（選んだ名前をまとめて1人分として集計）
+        if (names.length) {
+            const set = new Set(names), P = core(S.rows.filter(r => set.has(r.who)));
+            if (P.total) {
+                const others = S.people.filter(([nm]) => !set.has(nm)), rank = 1 + others.filter(([, n]) => n > P.total).length;
+                const pst = dayStats(P.byDay), pper = persona(P.hours), pph = peakIndex(P.hours);
+                add("me-total", "SSR", "🎖️", "あなたの提出数", `${num(P.total)}件`, `${others.length + 1}人中 ${rank}位 ・ 全体の ${(P.total / S.total * 100).toFixed(1)}%`, true);
+                add("me-style", "SR", pper.icon, "あなたの制作スタイル", `${pper.name}`, `いちばん多いのは ${pph}時台`, true);
+                add("me-days", "SR", "🗓️", "あなたの稼働日", `${num(pst.active)}日`, `最長 ${num(pst.streak.len)} 日連続`, true);
+                add("me-rate", "R", "🎯", "あなたの通過率", `${Math.round(Math.min(1, P.approve / P.total) * 100)}%`, `承認 ${num(P.approve)} ÷ 提出 ${num(P.total)}`, true);
+            }
+        }
+        return cards;
+    }
+    const r2 = s => String(s).padStart(2, "0");
+
+    const RAR_ORDER = ["N", "R", "SR", "SSR", "UR"];
+    function cardEl(c) {
+        return h("div", { class: "card rar-" + c.rar },
+            h("div", { class: "rar" }, c.rar), c.you ? h("div", { class: "you" }, "YOU") : null,
+            h("div", { class: "icon" }, c.icon), h("div", { class: "title" }, c.title),
+            h("div", { class: "big" }, c.big), h("div", { class: "sub" }, c.sub));
+    }
+
+    const Gacha = (() => {
+        const COST = 10, W = { N: 50, R: 28, SR: 14, SSR: 6, UR: 2 };
+        let cards = [], remaining = [], infoEl, slotsEl, oneBtn, allBtn, nextBtn, chargeBtn, machineEl;
+
+        function start() {
+            cards = buildCards(STATS, PICKED).sort((x, y) => RAR_ORDER.indexOf(x.rar) - RAR_ORDER.indexOf(y.rar));
+            G.cards = cards; remaining = [...cards]; G.owned = new Set(); G.fresh = new Set();
+            infoEl = h("span"); slotsEl = h("div", { class: "slots", role: "list" });
+            machineEl = h("div", { class: "machine", "aria-hidden": "true" }, "🎰");
+            oneBtn = h("button", { class: "btn pink", type: "button", onclick: () => pull(1) }, `1回 💎${COST}`);
+            allBtn = h("button", { class: "btn cyan", type: "button", onclick: () => pull(99) }, "まとめて回す");
+            chargeBtn = h("button", { class: "btn gold small", type: "button", onclick: charge }, "🎁 無料チャージ +50💎");
+            nextBtn = h("button", { class: "btn ghost small", type: "button", onclick: () => Boss.start() }, "🐉 ボス戦へ");
+            $("scr-gacha").replaceChildren(
+                h("div", { class: "gacha-info" }, h("span", { class: "h2 rainbow" }, "ログガチャ"), infoEl),
+                machineEl,
+                h("div", { class: "btn-row" }, oneBtn, allBtn),
+                h("p", { class: "slot-help" }, "出てくるカードは、あなたたちの「本物の提出ログ」から作った集計結果です。図鑑のカードをタップするといつでも読み返せます。"),
+                slotsEl,
+                h("div", { class: "foot" }, chargeBtn, nextBtn, h("a", { class: "link", href: SURVEY_URL }, "アンケートへ")));
+            showScreen("scr-gacha");
+            renderHud(); refresh();
+        }
+
+        function refresh() {
+            infoEl.textContent = `図鑑 ${G.owned.size}/${cards.length}`;
+            slotsEl.replaceChildren(...cards.map(c => {
+                const owned = G.owned.has(c.id);
+                const el = h("button", {
+                    type: "button", role: "listitem", class: `slot ${owned ? "owned rar-" + c.rar : ""} ${G.fresh.has(c.id) ? "new" : ""}`,
+                    "aria-label": owned ? `${c.title}：${c.big}` : "未獲得", disabled: owned ? null : "disabled"
+                }, owned ? c.icon : "？");
+                if (owned) el.addEventListener("click", () => { G.fresh.delete(c.id); openCard(c); refresh(); });
+                return el;
+            }));
+            const n = Math.min(remaining.length, Math.floor(G.coins / COST));
+            oneBtn.disabled = remaining.length === 0 || G.coins < COST;
+            allBtn.disabled = n <= 0;
+            allBtn.textContent = n > 0 ? `まとめて回す（${n}回 💎${n * COST}）` : "まとめて回す";
+            chargeBtn.hidden = !(remaining.length > 0 && G.coins < COST);
+            nextBtn.textContent = remaining.length ? "🐉 ボス戦へ（未回収あり）" : "🐉 ボス戦へ！";
+            nextBtn.className = remaining.length ? "btn ghost small" : "btn gold small";
+        }
+
+        function charge() { addCoins(50); toast("🎁 +50💎（課金じゃないぬる、無料ぬる）"); refresh(); }
+
+        function drawOne() {
+            const avail = new Set(remaining.map(c => c.rar));
+            let total = 0; avail.forEach(r => { total += W[r]; });
+            let x = Math.random() * total, rar = null;
+            for (const r of RAR_ORDER) { if (!avail.has(r)) continue; x -= W[r]; if (x <= 0) { rar = r; break; } }
+            if (!rar) rar = [...avail][0];
+            const card = pick(remaining.filter(c => c.rar === rar));
+            remaining = remaining.filter(c => c !== card);
+            return card;
+        }
+
+        function pull(n) {
+            n = Math.min(n, remaining.length, Math.floor(G.coins / COST));
+            if (n <= 0) return;
+            addCoins(-n * COST);
+            const got = Array.from({ length: n }, drawOne);
+            got.forEach(c => { G.owned.add(c.id); G.fresh.add(c.id); });
+            addXp(5 * n);
+            unlock("gacha1", "ガチャデビュー");
+            const best = got.reduce((b, c) => RAR_ORDER.indexOf(c.rar) > RAR_ORDER.indexOf(b) ? c.rar : b, "N");
+            if (best === "SR" || best === "SSR" || best === "UR") unlock("sr", "SR以上を引いた");
+            if (best === "SSR" || best === "UR") unlock("ssr", "SSRを引いた");
+            if (best === "UR") unlock("ur", "URを引いた！？");
+            if (n === 1) revealOne(got[0]); else revealMany(got, best);
+            if (remaining.length === 0) unlock("complete", "図鑑コンプリート");
+            refresh();
+        }
+
+        function rareFx(rar, x = 230, y = 300) {
+            Snd.rare(rar);
+            if (rar === "SSR" || rar === "UR") { flash(); shake(); burst(x, y, 26, rar === "UR" ? undefined : ["#ffca28", "#ffeb3b", "#fff"]); buzz(30); }
+            else if (rar === "SR") burst(x, y, 12, ["#ba68c8", "#fff"]);
+        }
+
+        function revealOne(c) {
+            machineEl.classList.add("shaking"); Snd.gacha();
+            showOverlay(h("div", { class: "capsule", "aria-hidden": "true" }, "🥚"), h("p", { class: "sub" }, "ガチャ中…"));
+            setTimeout(() => {
+                machineEl.classList.remove("shaking");
+                showOverlay(cardEl(c), h("button", { class: "btn gold", type: "button", onclick: () => { G.fresh.delete(c.id); closeOverlay(); refresh(); } }, "OK！"));
+                rareFx(c.rar);
+            }, 850);
+        }
+
+        function revealMany(list, best) {
+            Snd.gacha();
+            showOverlay(h("div", { class: "capsule", "aria-hidden": "true" }, "🥚"), h("p", { class: "sub" }, `${list.length}連ガチャ中…`));
+            setTimeout(() => {
+                const grid = h("div", { class: "grid-result" + (list.length > 6 ? " dense" : "") }, list.map((c, i) =>
+                    h("div", { class: "mini rar-" + c.rar, style: `--d:${(i * 0.08).toFixed(2)}s` },
+                        h("div", { class: "rar" }, c.rar), h("div", { class: "icon" }, c.icon), h("div", { class: "t" }, c.title), h("div", { class: "b" }, c.big))));
+                showOverlay(h("div", { class: "h2 rainbow" }, `${list.length}連ガチャ結果`), grid,
+                    h("button", { class: "btn gold", type: "button", onclick: () => { closeOverlay(); refresh(); } }, "図鑑で見る"));
+                rareFx(best);
+            }, 900);
+        }
+
+        function openCard(c) {
+            showOverlay(cardEl(c), h("button", { class: "btn ghost", type: "button", onclick: closeOverlay }, "とじる"));
+        }
+
+        return { start };
+    })();
+
+    // =====================================================================
+    // ステージ3: 〆切ドラゴン（HP＝実際の総提出数。ダメージ表示は実ログ）
+    // =====================================================================
+    const Boss = (() => {
+        const NEED = 25;
+        let hp = 0, maxHp = 0, dmgBase = 1, phase = 0, charge = 0, ultRunning = false, tapTimes = [];
+        let boss, hpFill, hpNum, feverEl, gaugeFill, ultBtn, say, arena;
+
+        function start() {
+            maxHp = hp = STATS.total; dmgBase = Math.max(1, Math.round(maxHp / 150));
+            phase = 0; charge = 0; ultRunning = false; tapTimes = [];
+            hpFill = h("i"); hpNum = h("div", { class: "hp-num" });
+            feverEl = h("div", { class: "fever" });
+            say = h("div", { class: "boss-say" }, "「〆切」が迫っている…！ 連打で提出ログを叩き込め！");
+            boss = h("button", { class: "boss-btn", type: "button", "aria-label": "ボスを攻撃（連打）" }, "🐉");
+            gaugeFill = h("i");
+            ultBtn = h("button", { class: "btn gold small", type: "button", disabled: "disabled", onclick: ultimate }, "🔥 総力戦！");
+            arena = h("div", { class: "arena" }, say, boss, feverEl);
+            $("scr-boss").replaceChildren(
+                h("div", { class: "boss-name rainbow" }, "〆切ドラゴン"),
+                h("div", { class: "hp" }, hpFill), hpNum, arena,
+                h("div", { class: "ult" }, h("div", { class: "gauge" }, gaugeFill), ultBtn),
+                h("div", { class: "foot" },
+                    h("button", { class: "btn ghost small", type: "button", onclick: skip }, "⏩ スキップ"),
+                    h("a", { class: "link", href: SURVEY_URL }, "アンケートへ")));
+            boss.addEventListener("pointerdown", hit);
+            boss.addEventListener("click", e => { if (e.detail === 0) hit(e); });   // キーボード操作（Enter/Space）
+            showScreen("scr-boss");
+            renderHud(); renderHp();
+            addXp(10);
+        }
+
+        function renderHp() {
+            hpFill.style.width = (hp / maxHp * 100) + "%";
+            hpNum.textContent = `HP ${num(hp)} / ${num(maxHp)}`;
+        }
+
+        function hit(e) {
+            if (ultRunning || hp <= 0) return;
+            const now = performance.now();
+            tapTimes.push(now); tapTimes = tapTimes.filter(t => now - t < 1000);
+            const fever = tapTimes.length >= 10 ? 3 : tapTimes.length >= 6 ? 2 : 1;
+            G.maxFever = Math.max(G.maxFever, fever);
+            const dmg = Math.max(1, Math.round(dmgBase * fever * (1 + G.owned.size * 0.01)));
+            const br = boss.getBoundingClientRect();
+            const [x, y] = (e.clientX || e.clientY) ? relXY(e.clientX, e.clientY) : relXY(br.left + br.width / 2, br.top + br.height / 2);
+            const r = pick(STATS.rows);
+            pop(`-${num(dmg)}`, x, y - 10, fever > 1 ? "gold" : "");
+            pop(`${r.type} cut${r.cut} ${r.comp}`, x, y + 14, "cap");           // 実際のログ1行がダメージの出どころ
+            burst(x, y, 5);
+            boss.classList.add("hurt"); setTimeout(() => boss.classList.remove("hurt"), 80);
+            Snd.hit(); buzz(6);
+            G.taps++; addXp(1);
+            charge = Math.min(NEED, charge + 1);
+            gaugeFill.style.width = (charge / NEED * 100) + "%";
+            if (charge >= NEED && ultBtn.disabled && !ultRunning) { ultBtn.disabled = false; toast("🔥 総力戦が使えます！"); }
+            feverEl.textContent = fever > 1 ? `🔥 FEVER x${fever}` : "";
+            if (fever === 3) unlock("fever", "連打王（FEVER x3）");
+            damage(dmg);
+        }
+
+        function damage(n) {
+            hp = Math.max(0, hp - n);
+            renderHp();
+            const frac = hp / maxHp;
+            [0.75, 0.5, 0.25].forEach((f, i) => {
+                if (frac <= f && phase <= i && hp > 0) {
+                    phase = i + 1; shake();
+                    const fact = ["first", "busiest", "half"].map(id => G.cards.find(c => c.id === id)).filter(Boolean)[i];
+                    say.textContent = fact ? `ぐぬぬ…「${fact.title}：${fact.big}」だと…！？` : "ぐぬぬ…やるな…！";
+                }
+            });
+            if (hp === 0) win();
+        }
+
+        // 総力戦：メンバー全員の提出数が順番に直撃する（全員分を足すとちょうどHPと同じ）
+        function ultimate() {
+            if (ultRunning || hp <= 0) return;
+            ultRunning = true; ultBtn.disabled = true; unlock("ult", "総力戦");
+            say.textContent = "チーム全員の提出が、いま一斉に襲いかかる！";
+            const list = STATS.people.slice(0, 6), rest = STATS.people.slice(6).reduce((s, [, n]) => s + n, 0);
+            const hits = list.map(([nm, n]) => [nm, n]); if (rest > 0) hits.push([`ほか${STATS.people.length - 6}名`, rest]);
+            hits.forEach(([nm, n], i) => setTimeout(() => {
+                if (hp <= 0) return;
+                const a = h("div", { class: "atk", style: `top:100%;margin-left:${(i % 2 ? 1 : -1) * (20 + rnd(50))}px` }, `${nm}  -${num(n)}`);
+                arena.append(a); a.addEventListener("animationend", () => a.remove());
+                Snd.hit(); shake(); burst(230, 300, 8); damage(n);
+            }, 500 + i * 450));
+            setTimeout(() => { if (hp > 0) damage(hp); }, 500 + hits.length * 450 + 300);   // 念のため
+        }
+
+        function win() {
+            G.bossDone = true;
+            boss.classList.add("dead"); feverEl.textContent = "";
+            say.textContent = "〆切ドラゴンを討伐した！ チーム全員の勝利！";
+            Snd.win(); flash(); shake(); burst(230, 300, 30); buzz(60);
+            unlock("boss", "〆切を討伐");
+            addXp(100);
+            setTimeout(() => Result.start(), 1700);
+        }
+
+        function skip() { G.bossSkipped = true; Result.start(); }
+
+        return { start };
+    })();
+
+    // =====================================================================
+    // 結果・ドパガキ度診断
+    // =====================================================================
+    const Result = (() => {
+        function start() {
+            const rushTps = G.rushTaps / 30;
+            const dopa = clamp(Math.round(rushTps * 10 + G.maxCombo * 0.8 + G.owned.size * 0.8 + (G.maxFever >= 3 ? 10 : 0) + Math.min(20, G.taps / 15)), 0, 100);
+            G.dopa = dopa;
+            const tier = dopa >= 100 ? "ドパガキ王（限界突破）" : dopa >= 75 ? "立派なドパガキ" : dopa >= 50 ? "ドパ気味" : dopa >= 25 ? "ふつうの人類" : "悟りの境地（仏）";
+            const say = dopa >= 75 ? "ぬるたろうの目が回ったぬる…。" : dopa >= 50 ? "いい感じに脳汁が出てたぬる〜。" : dopa >= 25 ? "落ち着いて遊べる大人ぬる！" : "ほぼ微動だにしなかったぬる…すごいぬる。";
+            showScreen("scr-result");
+            $("scr-result").replaceChildren(
+                h("div", { class: "h2 rainbow" }, G.bossDone ? "〆切ドラゴン討伐！ RESULT" : "RESULT"),
+                h("div", { class: "result-card" },
+                    h("div", { class: "eyebrow" }, "ドパガキ度"),
+                    h("div", { class: "rank rainbow" }, `${dopa}%`),
+                    h("div", { class: "dopa" }, tier),
+                    h("p", { class: "note" }, say + "（※医学的根拠はゼロぬる）")),
+                h("div", { class: "stats" },
+                    h("div", { class: "st" }, h("div", { class: "k" }, "レベル"), h("div", { class: "v" }, "LV " + G.level)),
+                    h("div", { class: "st" }, h("div", { class: "k" }, "ラッシュ"), h("div", { class: "v" }, G.rank)),
+                    h("div", { class: "st" }, h("div", { class: "k" }, "図鑑"), h("div", { class: "v" }, `${G.owned.size}/${G.cards.length}`)),
+                    h("div", { class: "st" }, h("div", { class: "k" }, "最大コンボ"), h("div", { class: "v" }, num(G.maxCombo))),
+                    h("div", { class: "st" }, h("div", { class: "k" }, "総タップ"), h("div", { class: "v" }, num(G.taps))),
+                    h("div", { class: "st" }, h("div", { class: "k" }, "実績"), h("div", { class: "v" }, String(G.unlocked.size)))),
+                G.unlocked.size ? h("div", { class: "achv" }, [...G.unlocked.values()].map(t => h("span", null, "🏆 " + t))) : null,
+                h("p", { class: "note", style: "text-align:center" }, "遊んでくれてありがとうぬる！ 最後に、Shell Arc の感想を聞かせてほしいぬる〜。"),
+                h("div", { class: "btn-row" },
+                    h("a", { class: "btn pink", href: SURVEY_URL }, "📝 アンケートに答える")),
+                h("div", { class: "links" },
+                    h("button", { class: "link", type: "button", onclick: again }, "↺ もう一回遊ぶ"),
+                    h("a", { class: "link", href: REVIEW_URL }, "📊 通常のレビューを見る")));
+            Snd.win(); burst(230, 200, 28); flash();
+        }
+
+        function again() { resetGame(); $("hud").hidden = true; showScreen("scr-title"); renderTitle("ready"); }
+
+        return { start };
+    })();
+
+    // =====================================================================
+    // 起動
+    // =====================================================================
+    function handleBuffer(buf) { handleText(decodeLog(buf)); }
+
+    function handleText(text) {
+        const rows = parseLogs(text);
+        if (!rows.some(r => r.type === "SUBMIT")) {
+            const lines = text.split(/\r?\n/).filter(l => l.trim()), first = (lines[0] || "").trim();
+            const details = [`読み込んだ文字数: ${num(text.length)} ／ 空でない行: ${num(lines.length)} ／ 読み取れた行: ${num(rows.length)}`];
+            if (!lines.length) details.push("ファイルの中身が空です。");
+            else {
+                details.push("先頭の行: " + (first.length > 90 ? first.slice(0, 90) + "…" : first));
+                if (first.startsWith("<")) details.push("→ ログではなく HTML が返っています。ファイルの場所（パス）が違う可能性があります。");
+                else if (first.includes("�")) details.push("→ 文字化けしています。ファイルの保存形式（文字コード）を確認してください。");
+                else details.push("→ 想定形式: 「SUBMIT * カット番号 * 工程 * 名前 * メッセージ * 14桁の日時 * ファイル名」");
+            }
+            renderTitle("error", "有効な提出ログが見つかりませんでした。", details);
+            return;
+        }
+        STATS = analyze(rows);
+        PICKED = [];
+        renderTitle("ready");
+    }
+
+    (async function boot() {
+        syncTools();
+        renderTitle("loading");
+        const abs = new URL(LOG_URL, location.href).href;
+        try {
+            const res = await fetch(LOG_URL, { cache: "no-store" });
+            if (!res.ok) {
+                renderTitle("error", `制作ログが見つかりません（HTTP ${res.status}）。`, [
+                    "探した場所: " + abs,
+                    "→ このページと同じ階層に resources/full_logs.txt があるか、ファイル名の大文字小文字も含めて確認してください。"
+                ]);
+                return;
+            }
+            handleBuffer(await res.arrayBuffer());
+        } catch (e) {
+            console.warn("ログの自動読み込みに失敗:", e);
+            renderTitle("error", "制作ログを自動で読み込めませんでした。", [
+                "探した場所: " + abs,
+                location.protocol === "file:"
+                    ? "→ ファイルを直接開いている（file://）ため、ブラウザの制限で読めません。サーバー経由で開くか、下のボタンから選んでください。"
+                    : "→ 通信に失敗しました（" + (e && e.message ? e.message : e) + "）。"
+            ]);
+        }
+    })();
+</script>
+</body>
+</html>
